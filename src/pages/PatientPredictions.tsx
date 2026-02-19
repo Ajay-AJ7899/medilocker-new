@@ -1,15 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Brain, TrendingUp, AlertTriangle, Shield, ExternalLink, FileDown } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Brain, TrendingUp, AlertTriangle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MOCK_PREDICTIONS, type PredictionData } from "@/lib/mockPredictions";
-import { generatePredictionPDF } from "@/lib/generatePredictionPDF";
-import { RiskSummaryCard } from "@/components/predictions/RiskSummaryCard";
-import { ShapExplanationCard } from "@/components/predictions/ShapExplanationCard";
-import { PredictionChat } from "@/components/predictions/PredictionChat";
 
 const riskColors: Record<string, string> = {
   low: "bg-green-500/10 text-green-500 border-green-500/30",
@@ -18,14 +13,58 @@ const riskColors: Record<string, string> = {
   critical: "bg-red-500/10 text-red-500 border-red-500/30",
 };
 
-const PatientPredictions = () => {
-  const [predictions] = useState<PredictionData[]>(MOCK_PREDICTIONS);
-  const [selected, setSelected] = useState<PredictionData | null>(MOCK_PREDICTIONS[0] || null);
 
-  const handleDownloadPDF = () => {
-    if (!selected) return;
-    generatePredictionPDF(selected, undefined, undefined, false);
-  };
+const PatientPredictions = () => {
+  const [selected, setSelected] = useState<PredictionData | null>(MOCK_PREDICTIONS[1] || null);
+
+  useEffect(() => {
+    const fetchPrediction = async () => {
+      try {
+        const res = await fetch("http://localhost:8000/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pregnancies: 2,
+            glucose: 150,
+            bloodPressure: 80,
+            skinThickness: 25,
+            insulin: 120,
+            bmi: 32.5,
+            diabetesPedigree: 0.7,
+            age: 45
+          })
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          console.log(result);
+
+          const riskLevelMap: Record<string, "low" | "medium" | "high" | "critical"> = {
+            "Low": "low",
+            "Moderate": "medium",
+            "High": "high"
+          };
+
+          setSelected({
+            id: "api-pred",
+            patient_id: "current-user",
+            predicted_disease: "Diabetes Risk Assessment",
+            confidence: result.riskPercentage,
+            risk_level: riskLevelMap[result.riskLevel] || "medium",
+            explainability: [],
+            prevention: [],
+            reference_links: [],
+            status: "pending",
+            created_at: new Date().toISOString()
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch prediction:", error);
+      }
+    };
+
+    fetchPrediction();
+  }, []);
 
   if (!selected) {
     return (
@@ -44,27 +83,7 @@ const PatientPredictions = () => {
         <p className="text-muted-foreground">AI-powered health risk analysis</p>
       </motion.div>
 
-      {/* Prediction selector */}
-      {predictions.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {predictions.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setSelected(p)}
-              className={`flex-shrink-0 rounded-lg border px-4 py-2.5 text-left text-sm transition-all ${
-                selected.id === p.id
-                  ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card text-foreground hover:border-primary/30"
-              }`}
-            >
-              <p className="font-medium">{p.predicted_disease}</p>
-              <p className="text-xs text-muted-foreground">{p.confidence}% confidence</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Summary metric cards */}
+      {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-3 p-5">
@@ -90,118 +109,13 @@ const PatientPredictions = () => {
             <div>
               <p className="text-xs text-muted-foreground">Risk Level</p>
               <Badge variant="outline" className={riskColors[selected.risk_level]}>
-                {selected.risk_level.toUpperCase()}
+                {selected.risk_level === 'low' ? "NOT DETECTED" : selected.risk_level.toUpperCase()}
               </Badge>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="summary" className="space-y-4">
-        <TabsList className="flex-wrap h-auto gap-1">
-          <TabsTrigger value="summary">Risk Summary</TabsTrigger>
-          <TabsTrigger value="shap">SHAP</TabsTrigger>
-          <TabsTrigger value="explain">Why this?</TabsTrigger>
-          <TabsTrigger value="prevention">Prevention</TabsTrigger>
-          <TabsTrigger value="references">Learn More</TabsTrigger>
-          <TabsTrigger value="chat">Ask AI</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="summary">
-          <RiskSummaryCard prediction={selected} />
-        </TabsContent>
-
-        <TabsContent value="shap">
-          <ShapExplanationCard prediction={selected} />
-        </TabsContent>
-
-        <TabsContent value="explain">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Why this prediction?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {selected.explainability.map((f, i) => (
-                <div key={i} className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">{f.factor}</span>
-                    <span className="text-sm font-bold text-primary">{f.contribution}%</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${f.contribution}%` }}
-                      transition={{ delay: i * 0.1, duration: 0.5 }}
-                      className="h-full rounded-full bg-primary"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">{f.description}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="prevention">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                What you can do
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {selected.prevention.map((p, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                      {i + 1}
-                    </span>
-                    <span className="text-sm text-foreground">{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="references">
-          <Card>
-            <CardHeader><CardTitle className="text-lg">Learn More</CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {selected.reference_links.map((ref, i) => (
-                <a
-                  key={i}
-                  href={ref.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/50"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{ref.title}</p>
-                    <p className="text-xs text-muted-foreground">{ref.source}</p>
-                  </div>
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                </a>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="chat">
-          <PredictionChat
-            prediction={selected}
-            showSummary={true}
-          />
-        </TabsContent>
-      </Tabs>
-
-      <Button variant="outline" onClick={handleDownloadPDF} className="gap-2">
-        <FileDown className="h-4 w-4" />
-        Download Report (PDF)
-      </Button>
-    </div>
+.    </div>
   );
 };
 
