@@ -5,7 +5,8 @@ export function generatePredictionPDF(
   prediction: PredictionData,
   doctorDecision?: string,
   doctorComments?: string,
-  includeFullDetails = false
+  includeFullDetails = false,
+  patientName?: string | null
 ) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -28,6 +29,7 @@ export function generatePredictionPDF(
   // Header
   addLine("MEDILOCKER — Health Prediction Report", 18, true);
   addSpacer(4);
+  if (patientName) addLine(`Patient: ${patientName}`, 11, true);
   addLine(`Generated: ${new Date().toLocaleDateString()}`, 9);
   addLine(`Report ID: ${prediction.id}`, 9);
   addSpacer(8);
