@@ -25,18 +25,17 @@ const AppSidebar = () => {
   const patientLinks = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/records", label: "Records", icon: FileText },
-    { to: "/insurance", label: "Insurance", icon: ShieldCheck },
+    { to: "/my-predictions", label: "Predictions", icon: Heart },
     { to: "/qr-code", label: "My QR Code", icon: QrCode },
-    { to: "/health-score", label: "Health Score", icon: Heart },
     { to: "/chatbot", label: "AI Assistant", icon: MessageCircle },
     { to: "/profile", label: "Profile", icon: User },
   ];
 
   const doctorLinks = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { to: "/doctor-panel", label: "Doctor Panel", icon: Stethoscope },
+    { to: "/predictions", label: "Predictions", icon: Heart },
+    { to: "/patients", label: "Patients", icon: Stethoscope },
     { to: "/scan", label: "Scan QR", icon: ScanLine },
-    { to: "/records", label: "Records", icon: FileText },
     { to: "/profile", label: "Profile", icon: User },
   ];
 

@@ -190,6 +190,83 @@ export type Database = {
         }
         Relationships: []
       }
+      prediction_feedback: {
+        Row: {
+          comments: string | null
+          created_at: string
+          decision: string
+          doctor_id: string
+          id: string
+          prediction_id: string
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          decision: string
+          doctor_id: string
+          id?: string
+          prediction_id: string
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          decision?: string
+          doctor_id?: string
+          id?: string
+          prediction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_feedback_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          confidence: number
+          created_at: string
+          explainability: Json
+          id: string
+          patient_id: string
+          predicted_disease: string
+          prevention: Json
+          reference_links: Json
+          risk_level: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          explainability?: Json
+          id?: string
+          patient_id: string
+          predicted_disease: string
+          prevention?: Json
+          reference_links?: Json
+          risk_level?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          explainability?: Json
+          id?: string
+          patient_id?: string
+          predicted_disease?: string
+          prevention?: Json
+          reference_links?: Json
+          risk_level?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allergies: string[] | null
