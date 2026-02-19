@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Brain, TrendingUp, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MOCK_PREDICTIONS, type PredictionData } from "@/lib/mockPredictions";
 
 const riskColors: Record<string, string> = {
@@ -114,7 +115,7 @@ const PatientPredictions = () => {
           </CardContent>
         </Card>
       </div>
-    </div>
+.    </div>
   );
 };
 
