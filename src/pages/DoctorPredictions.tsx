@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Brain, CheckCircle, XCircle, AlertTriangle, TrendingUp, Shield, ExternalLink, FileDown, MessageSquare, Search, UserCheck } from "lucide-react";
+import {
+  Brain, CheckCircle, XCircle, AlertTriangle, TrendingUp, Shield,
+  ExternalLink, FileDown, MessageSquare, Search, UserCheck,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +15,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { generateMockPredictionsForPatient, type PredictionData } from "@/lib/mockPredictions";
 import { generatePredictionPDF } from "@/lib/generatePredictionPDF";
+import { RiskSummaryCard } from "@/components/predictions/RiskSummaryCard";
+import { ShapExplanationCard } from "@/components/predictions/ShapExplanationCard";
+import { PredictionChat } from "@/components/predictions/PredictionChat";
 import { toast } from "sonner";
 
 interface PatientProfile {
@@ -44,7 +50,7 @@ const DoctorPredictions = () => {
   const [selectedPrediction, setSelectedPrediction] = useState<PredictionData | null>(null);
   const [feedbackComment, setFeedbackComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [feedbackGiven, setFeedbackGiven] = useState<Record<string, string>>({});
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<string, { decision: string; comment: string }>>({});
 
   const searchPatient = async () => {
     if (!searchCode.trim()) { toast.error("Enter a patient code."); return; }
@@ -75,6 +81,13 @@ const DoctorPredictions = () => {
 
   const handleFeedback = async (decision: "accepted" | "rejected") => {
     if (!selectedPrediction || !user) return;
+
+    // Rejection requires a comment
+    if (decision === "rejected" && !feedbackComment.trim()) {
+      toast.error("Please provide a rejection reason before rejecting.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const { error } = await supabase.from("prediction_feedback").insert({
@@ -88,7 +101,10 @@ const DoctorPredictions = () => {
         console.log("Mock mode - feedback would be saved:", { decision, comments: feedbackComment });
       }
 
-      setFeedbackGiven((prev) => ({ ...prev, [selectedPrediction.id]: decision }));
+      setFeedbackGiven((prev) => ({
+        ...prev,
+        [selectedPrediction.id]: { decision, comment: feedbackComment },
+      }));
       setFeedbackComment("");
       toast.success(`Prediction ${decision === "accepted" ? "accepted" : "rejected"} successfully`);
     } catch {
@@ -100,7 +116,8 @@ const DoctorPredictions = () => {
 
   const handleDownloadPDF = () => {
     if (!selectedPrediction) return;
-    generatePredictionPDF(selectedPrediction, feedbackGiven[selectedPrediction.id], feedbackComment, true, patient?.full_name);
+    const fb = feedbackGiven[selectedPrediction.id];
+    generatePredictionPDF(selectedPrediction, fb?.decision, fb?.comment, true, patient?.full_name);
   };
 
   return (
@@ -161,7 +178,7 @@ const DoctorPredictions = () => {
       {/* Predictions */}
       {patient && selectedPrediction && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-          {/* Prediction list */}
+          {/* Prediction selector */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             {predictions.map((p) => (
               <button
@@ -180,14 +197,18 @@ const DoctorPredictions = () => {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList>
+            <TabsList className="flex-wrap h-auto gap-1">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="explainability">Explainability</TabsTrigger>
+              <TabsTrigger value="risk">Risk Summary</TabsTrigger>
+              <TabsTrigger value="shap">SHAP</TabsTrigger>
+              <TabsTrigger value="explain">Explainability</TabsTrigger>
               <TabsTrigger value="prevention">Prevention</TabsTrigger>
               <TabsTrigger value="references">References</TabsTrigger>
+              <TabsTrigger value="chat">AI Chat</TabsTrigger>
               <TabsTrigger value="feedback">Feedback</TabsTrigger>
             </TabsList>
 
+            {/* Overview */}
             <TabsContent value="overview" className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-3">
                 <Card>
@@ -222,22 +243,41 @@ const DoctorPredictions = () => {
               </div>
 
               {feedbackGiven[selectedPrediction.id] && (
-                <Card className={feedbackGiven[selectedPrediction.id] === "accepted" ? "border-green-500/30" : "border-red-500/30"}>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    {feedbackGiven[selectedPrediction.id] === "accepted" ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-500" />
+                <Card className={feedbackGiven[selectedPrediction.id].decision === "accepted" ? "border-green-500/30" : "border-red-500/30"}>
+                  <CardContent className="space-y-2 p-4">
+                    <div className="flex items-center gap-3">
+                      {feedbackGiven[selectedPrediction.id].decision === "accepted" ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                      <p className="text-sm font-medium">
+                        You {feedbackGiven[selectedPrediction.id].decision} this prediction
+                      </p>
+                    </div>
+                    {feedbackGiven[selectedPrediction.id].decision === "rejected" && feedbackGiven[selectedPrediction.id].comment && (
+                      <div className="ml-8 rounded-md bg-red-500/5 border border-red-500/20 px-3 py-2">
+                        <p className="text-xs text-muted-foreground font-medium mb-1">Rejection Reason:</p>
+                        <p className="text-sm text-foreground">{feedbackGiven[selectedPrediction.id].comment}</p>
+                      </div>
                     )}
-                    <p className="text-sm font-medium">
-                      You {feedbackGiven[selectedPrediction.id]} this prediction
-                    </p>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
 
-            <TabsContent value="explainability" className="space-y-4">
+            {/* Risk Summary */}
+            <TabsContent value="risk">
+              <RiskSummaryCard prediction={selectedPrediction} />
+            </TabsContent>
+
+            {/* SHAP */}
+            <TabsContent value="shap">
+              <ShapExplanationCard prediction={selectedPrediction} />
+            </TabsContent>
+
+            {/* Explainability */}
+            <TabsContent value="explain" className="space-y-4">
               <Card>
                 <CardHeader><CardTitle className="text-lg">Contributing Factors</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
@@ -262,6 +302,7 @@ const DoctorPredictions = () => {
               </Card>
             </TabsContent>
 
+            {/* Prevention */}
             <TabsContent value="prevention" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -283,6 +324,7 @@ const DoctorPredictions = () => {
               </Card>
             </TabsContent>
 
+            {/* References */}
             <TabsContent value="references" className="space-y-4">
               <Card>
                 <CardHeader><CardTitle className="text-lg">Medical References</CardTitle></CardHeader>
@@ -301,6 +343,18 @@ const DoctorPredictions = () => {
               </Card>
             </TabsContent>
 
+            {/* AI Chat */}
+            <TabsContent value="chat">
+              <PredictionChat
+                prediction={selectedPrediction}
+                patientName={patient?.full_name}
+                bloodType={patient?.blood_type}
+                allergies={patient?.allergies}
+                showSummary={true}
+              />
+            </TabsContent>
+
+            {/* Feedback */}
             <TabsContent value="feedback" className="space-y-4">
               <Card>
                 <CardHeader>
@@ -311,29 +365,55 @@ const DoctorPredictions = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {feedbackGiven[selectedPrediction.id] ? (
-                    <div className="rounded-lg bg-secondary/50 p-4 text-center">
-                      <p className="text-sm text-muted-foreground">Feedback already submitted for this prediction</p>
+                    <div className="space-y-3">
+                      <div className={`rounded-lg p-4 ${feedbackGiven[selectedPrediction.id].decision === "accepted" ? "bg-green-500/5 border border-green-500/20" : "bg-red-500/5 border border-red-500/20"}`}>
+                        <div className="flex items-center gap-2 mb-2">
+                          {feedbackGiven[selectedPrediction.id].decision === "accepted" ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-500" />
+                          )}
+                          <p className="text-sm font-semibold capitalize">
+                            Prediction {feedbackGiven[selectedPrediction.id].decision}
+                          </p>
+                        </div>
+                        {feedbackGiven[selectedPrediction.id].comment && (
+                          <div className="rounded bg-background/50 px-3 py-2">
+                            <p className="text-xs text-muted-foreground mb-1">Reason / Comments:</p>
+                            <p className="text-sm text-foreground">{feedbackGiven[selectedPrediction.id].comment}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <>
                       <Textarea
-                        placeholder="Add your clinical comments (optional for accept, recommended for reject)..."
+                        placeholder="Add your clinical comments (required for rejection, optional for acceptance)..."
                         value={feedbackComment}
                         onChange={(e) => setFeedbackComment(e.target.value)}
                         rows={4}
                       />
                       <div className="flex gap-3">
-                        <Button onClick={() => handleFeedback("accepted")} disabled={submitting}
-                          className="flex-1 gap-2 bg-green-600 hover:bg-green-700">
+                        <Button
+                          onClick={() => handleFeedback("accepted")}
+                          disabled={submitting}
+                          className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+                        >
                           <CheckCircle className="h-4 w-4" /> Accept Prediction
                         </Button>
-                        <Button onClick={() => handleFeedback("rejected")} disabled={submitting || !feedbackComment.trim()}
-                          variant="destructive" className="flex-1 gap-2">
+                        <Button
+                          onClick={() => handleFeedback("rejected")}
+                          disabled={submitting || !feedbackComment.trim()}
+                          variant="destructive"
+                          className="flex-1 gap-2"
+                        >
                           <XCircle className="h-4 w-4" /> Reject Prediction
                         </Button>
                       </div>
                       {!feedbackComment.trim() && (
-                        <p className="text-xs text-muted-foreground">* Comments required when rejecting (used for model retraining)</p>
+                        <p className="text-xs text-muted-foreground">
+                          * <span className="text-red-400 font-medium">Rejection reason is required</span> — provide comments above to enable rejection (used for model retraining)
+                        </p>
                       )}
                     </>
                   )}

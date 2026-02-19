@@ -4,8 +4,12 @@ import { Brain, TrendingUp, AlertTriangle, Shield, ExternalLink, FileDown } from
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MOCK_PREDICTIONS, type PredictionData } from "@/lib/mockPredictions";
 import { generatePredictionPDF } from "@/lib/generatePredictionPDF";
+import { RiskSummaryCard } from "@/components/predictions/RiskSummaryCard";
+import { ShapExplanationCard } from "@/components/predictions/ShapExplanationCard";
+import { PredictionChat } from "@/components/predictions/PredictionChat";
 
 const riskColors: Record<string, string> = {
   low: "bg-green-500/10 text-green-500 border-green-500/30",
@@ -60,7 +64,7 @@ const PatientPredictions = () => {
         </div>
       )}
 
-      {/* Summary cards */}
+      {/* Summary metric cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-3 p-5">
@@ -93,77 +97,105 @@ const PatientPredictions = () => {
         </Card>
       </div>
 
-      {/* Explainability */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Why this prediction?</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {selected.explainability.map((f, i) => (
-            <div key={i} className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">{f.factor}</span>
-                <span className="text-sm font-bold text-primary">{f.contribution}%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${f.contribution}%` }}
-                  transition={{ delay: i * 0.1, duration: 0.5 }}
-                  className="h-full rounded-full bg-primary"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">{f.description}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/* Tabs */}
+      <Tabs defaultValue="summary" className="space-y-4">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="summary">Risk Summary</TabsTrigger>
+          <TabsTrigger value="shap">SHAP</TabsTrigger>
+          <TabsTrigger value="explain">Why this?</TabsTrigger>
+          <TabsTrigger value="prevention">Prevention</TabsTrigger>
+          <TabsTrigger value="references">Learn More</TabsTrigger>
+          <TabsTrigger value="chat">Ask AI</TabsTrigger>
+        </TabsList>
 
-      {/* Prevention */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            What you can do
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-3">
-            {selected.prevention.map((p, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                  {i + 1}
-                </span>
-                <span className="text-sm text-foreground">{p}</span>
-              </li>
-            ))}
-          </ul>
-        </CardContent>
-      </Card>
+        <TabsContent value="summary">
+          <RiskSummaryCard prediction={selected} />
+        </TabsContent>
 
-      {/* References */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Learn More</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {selected.reference_links.map((ref, i) => (
-            <a
-              key={i}
-              href={ref.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/50"
-            >
-              <div>
-                <p className="text-sm font-medium text-foreground">{ref.title}</p>
-                <p className="text-xs text-muted-foreground">{ref.source}</p>
-              </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground" />
-            </a>
-          ))}
-        </CardContent>
-      </Card>
+        <TabsContent value="shap">
+          <ShapExplanationCard prediction={selected} />
+        </TabsContent>
+
+        <TabsContent value="explain">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Why this prediction?</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selected.explainability.map((f, i) => (
+                <div key={i} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground">{f.factor}</span>
+                    <span className="text-sm font-bold text-primary">{f.contribution}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${f.contribution}%` }}
+                      transition={{ delay: i * 0.1, duration: 0.5 }}
+                      className="h-full rounded-full bg-primary"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{f.description}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="prevention">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                What you can do
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                {selected.prevention.map((p, i) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      {i + 1}
+                    </span>
+                    <span className="text-sm text-foreground">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="references">
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Learn More</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {selected.reference_links.map((ref, i) => (
+                <a
+                  key={i}
+                  href={ref.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-secondary/50"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{ref.title}</p>
+                    <p className="text-xs text-muted-foreground">{ref.source}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                </a>
+              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <PredictionChat
+            prediction={selected}
+            showSummary={true}
+          />
+        </TabsContent>
+      </Tabs>
 
       <Button variant="outline" onClick={handleDownloadPDF} className="gap-2">
         <FileDown className="h-4 w-4" />
