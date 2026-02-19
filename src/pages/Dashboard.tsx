@@ -46,7 +46,7 @@ const Dashboard = () => {
   const quickActions = [
     { label: "Add Record", icon: Plus, to: "/records?add=true" },
     { label: "My QR Code", icon: QrCode, to: "/qr-code" },
-    { label: "Health Score", icon: Heart, to: "/health-score" },
+    { label: "Predictions", icon: Heart, to: "/my-predictions" },
     { label: "AI Chat", icon: MessageCircle, to: "/chatbot" },
   ];
 

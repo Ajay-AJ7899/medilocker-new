@@ -29,15 +29,15 @@ const TopNavbar = () => {
   const patientLinks = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { to: "/records", label: "Records", icon: FileText },
-    { to: "/insurance", label: "Insurance", icon: ShieldCheck },
+    { to: "/my-predictions", label: "Predictions", icon: Heart },
     { to: "/qr-code", label: "QR Code", icon: QrCode },
-    { to: "/health-score", label: "Health", icon: Heart },
     { to: "/chatbot", label: "AI Chat", icon: MessageCircle },
     { to: "/profile", label: "Profile", icon: User },
   ];
 
   const doctorLinks = [
     { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { to: "/predictions", label: "Predictions", icon: Heart },
     { to: "/patients", label: "Patients", icon: Stethoscope },
     { to: "/profile", label: "Profile", icon: User },
   ];

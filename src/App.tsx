@@ -10,7 +10,6 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 import Records from "./pages/Records";
-import Insurance from "./pages/Insurance";
 import Patients from "./pages/Patients";
 import RoleGuard from "./components/RoleGuard";
 import QRCodePage from "./pages/QRCode";
@@ -22,6 +21,8 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminRoles from "./pages/admin/AdminRoles";
 import AppLayout from "./components/layout/AppLayout";
 import NotFound from "./pages/NotFound";
+import DoctorPredictions from "./pages/DoctorPredictions";
+import PatientPredictions from "./pages/PatientPredictions";
 
 const queryClient = new QueryClient();
 
@@ -41,7 +42,6 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/records" element={<RoleGuard allowedRoles={["patient", "admin"]}><Records /></RoleGuard>} />
-              <Route path="/insurance" element={<RoleGuard allowedRoles={["patient", "admin"]}><Insurance /></RoleGuard>} />
               <Route path="/patients" element={<RoleGuard allowedRoles={["doctor"]}><Patients /></RoleGuard>} />
               <Route path="/qr-code" element={<RoleGuard allowedRoles={["patient"]}><QRCodePage /></RoleGuard>} />
               <Route path="/health-score" element={<RoleGuard allowedRoles={["patient"]}><HealthScore /></RoleGuard>} />
@@ -49,6 +49,8 @@ const App = () => (
               <Route path="/scan" element={<ScanQR />} />
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/roles" element={<AdminRoles />} />
+              <Route path="/predictions" element={<RoleGuard allowedRoles={["doctor"]}><DoctorPredictions /></RoleGuard>} />
+              <Route path="/my-predictions" element={<RoleGuard allowedRoles={["patient"]}><PatientPredictions /></RoleGuard>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

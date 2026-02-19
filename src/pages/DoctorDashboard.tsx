@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Search, FileText, UserCheck, Plus, Clock } from "lucide-react";
+import { Search, FileText, UserCheck, Plus, Clock, Brain } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -81,7 +81,15 @@ const DoctorDashboard = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="mb-4 text-lg font-semibold text-foreground">Quick Actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/predictions")}
+            className="h-auto flex-col gap-2 py-6 hover:bg-primary/5 hover:border-primary/30"
+          >
+            <Brain className="h-6 w-6 text-primary" />
+            <span className="text-sm">Prediction Dashboard</span>
+          </Button>
           <Button
             variant="outline"
             onClick={() => navigate("/patients")}
