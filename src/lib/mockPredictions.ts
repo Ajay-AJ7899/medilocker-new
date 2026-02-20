@@ -12,6 +12,7 @@ export interface PredictionData {
   reference_links: ReferenceLink[];
   status: "pending" | "accepted" | "rejected";
   created_at: string;
+  explanation?: string;
 }
 
 export interface ExplainFactor {

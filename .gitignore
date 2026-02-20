@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment — never commit secrets
+.env
+app/.env
+*.env
+
+# ML model files
+*.pkl
