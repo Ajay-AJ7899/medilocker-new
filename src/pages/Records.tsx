@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -27,15 +27,27 @@ const categories = [
 ];
 
 const categoryColors: Record<string, string> = {
-  consultation: "bg-blue-500/20 text-blue-400",
-  diagnosis: "bg-red-500/20 text-red-400",
-  medication: "bg-green-500/20 text-green-400",
-  surgery: "bg-orange-500/20 text-orange-400",
-  chronic_condition: "bg-purple-500/20 text-purple-400",
-  treatment_plan: "bg-cyan-500/20 text-cyan-400",
-  lab_result: "bg-yellow-500/20 text-yellow-400",
-  allergy: "bg-pink-500/20 text-pink-400",
-  vaccination: "bg-teal-500/20 text-teal-400",
+  consultation: "bg-primary/15 text-primary",
+  diagnosis: "bg-destructive/15 text-destructive",
+  medication: "bg-[hsl(160,84%,39%)]/15 text-[hsl(160,84%,39%)]",
+  surgery: "bg-[hsl(38,92%,50%)]/15 text-[hsl(38,92%,50%)]",
+  chronic_condition: "bg-[hsl(280,80%,55%)]/15 text-[hsl(280,80%,55%)]",
+  treatment_plan: "bg-accent/15 text-accent",
+  lab_result: "bg-[hsl(38,92%,50%)]/15 text-[hsl(38,92%,50%)]",
+  allergy: "bg-[hsl(340,82%,52%)]/15 text-[hsl(340,82%,52%)]",
+  vaccination: "bg-accent/15 text-accent",
+};
+
+const categoryGradients: Record<string, string> = {
+  consultation: "gradient-primary",
+  diagnosis: "gradient-warm",
+  medication: "gradient-accent",
+  surgery: "gradient-sunny",
+  chronic_condition: "gradient-primary",
+  treatment_plan: "gradient-accent",
+  lab_result: "gradient-sunny",
+  allergy: "gradient-warm",
+  vaccination: "gradient-accent",
 };
 
 interface MedicalDocument {
@@ -100,7 +112,6 @@ const Records = () => {
       const recs = (data as MedicalRecord[]) || [];
       setRecords(recs);
 
-      // Fetch documents for all records
       if (recs.length > 0) {
         const recordIds = recs.map(r => r.id);
         const { data: docs, error: docsError } = await supabase
@@ -137,7 +148,6 @@ const Records = () => {
     }
 
     try {
-      // Insert record
       const { data: record, error } = await supabase
         .from("medical_records")
         .insert({
@@ -153,7 +163,6 @@ const Records = () => {
 
       if (error) throw error;
 
-      // Upload file if present
       if (file && record) {
         const filePath = `${user.id}/${record.id}/${file.name}`;
         const { error: uploadError } = await supabase.storage
@@ -221,27 +230,22 @@ const Records = () => {
     doc.setFontSize(20);
     doc.setTextColor(33, 37, 41);
     doc.text("MediLocker - Medical Report", 20, 25);
-
     doc.setDrawColor(59, 130, 246);
     doc.setLineWidth(0.5);
     doc.line(20, 30, 190, 30);
-
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
     doc.text(`Date: ${new Date(record.record_date).toLocaleDateString()}`, 20, 40);
     doc.text(`Category: ${categories.find(c => c.value === record.category)?.label || record.category}`, 20, 48);
-
     doc.setFontSize(16);
     doc.setTextColor(33, 37, 41);
     doc.text(record.title, 20, 62);
-
     if (record.description) {
       doc.setFontSize(11);
       doc.setTextColor(80, 80, 80);
       const lines = doc.splitTextToSize(record.description, 170);
       doc.text(lines, 20, 72);
     }
-
     if (doctorInfo) {
       const yStart = record.description ? 72 + (doc.splitTextToSize(record.description, 170).length * 6) + 15 : 80;
       doc.setDrawColor(59, 130, 246);
@@ -254,27 +258,21 @@ const Records = () => {
       doc.text(`Name: ${doctorInfo.full_name || "N/A"}`, 20, yStart + 20);
       doc.text(`Phone: ${doctorInfo.phone_number || "N/A"}`, 20, yStart + 28);
     }
-
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(`Generated on ${new Date().toLocaleString()} via MediLocker`, 20, 285);
-
     doc.save(`${record.title.replace(/\s+/g, "_")}_report.pdf`);
     toast.success("Report downloaded!");
   };
 
   const handleFileDownload = async (doc: MedicalDocument) => {
     try {
-      // The file_url stored may be a public URL; try to download via storage API using signed URL
-      // Extract the path from the URL
       const urlParts = doc.file_url.split("/medical-documents/");
       const filePath = urlParts.length > 1 ? urlParts[urlParts.length - 1] : null;
-
       if (filePath) {
         const { data, error } = await supabase.storage
           .from("medical-documents")
           .createSignedUrl(decodeURIComponent(filePath), 60);
-
         if (data?.signedUrl) {
           const link = document.createElement("a");
           link.href = data.signedUrl;
@@ -287,8 +285,6 @@ const Records = () => {
           return;
         }
       }
-
-      // Fallback: open the stored URL directly
       window.open(doc.file_url, "_blank");
       toast.success(`Opening ${doc.file_name}`);
     } catch {
@@ -300,21 +296,19 @@ const Records = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-wider text-foreground">
-            Medical Records
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Medical Records</h1>
           <p className="text-sm text-muted-foreground">Your complete medical history</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
+            <Button className="gap-2 btn-gradient rounded-xl shadow-md">
               <Plus className="h-4 w-4" />
               Add Record
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass border-border sm:max-w-lg">
+          <DialogContent className="glass-vivid border-border/50 sm:max-w-lg rounded-2xl">
             <DialogHeader>
-              <DialogTitle className="font-display tracking-wider text-primary">
+              <DialogTitle className="font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Add Medical Record
               </DialogTitle>
             </DialogHeader>
@@ -322,7 +316,7 @@ const Records = () => {
               <div>
                 <Label>Category *</Label>
                 <Select value={newRecord.category} onValueChange={(v) => setNewRecord((p) => ({ ...p, category: v }))}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectTrigger className="mt-1 rounded-xl"><SelectValue placeholder="Select category" /></SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
                       <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
@@ -332,42 +326,21 @@ const Records = () => {
               </div>
               <div>
                 <Label>Title *</Label>
-                <Input
-                  value={newRecord.title}
-                  onChange={(e) => setNewRecord((p) => ({ ...p, title: e.target.value }))}
-                  className="mt-1"
-                />
+                <Input value={newRecord.title} onChange={(e) => setNewRecord((p) => ({ ...p, title: e.target.value }))} className="mt-1 rounded-xl" />
               </div>
               <div>
                 <Label>Description</Label>
-                <Textarea
-                  value={newRecord.description}
-                  onChange={(e) => setNewRecord((p) => ({ ...p, description: e.target.value }))}
-                  className="mt-1"
-                  rows={3}
-                />
+                <Textarea value={newRecord.description} onChange={(e) => setNewRecord((p) => ({ ...p, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} />
               </div>
               <div>
                 <Label>Date</Label>
-                <Input
-                  type="date"
-                  value={newRecord.record_date}
-                  onChange={(e) => setNewRecord((p) => ({ ...p, record_date: e.target.value }))}
-                  className="mt-1"
-                />
+                <Input type="date" value={newRecord.record_date} onChange={(e) => setNewRecord((p) => ({ ...p, record_date: e.target.value }))} className="mt-1 rounded-xl" />
               </div>
               <div>
                 <Label>Attach Document (optional)</Label>
-                <Input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="mt-1"
-                />
+                <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={(e) => setFile(e.target.files?.[0] || null)} className="mt-1 rounded-xl" />
               </div>
-              <Button onClick={handleAdd} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                Save Record
-              </Button>
+              <Button onClick={handleAdd} className="w-full btn-gradient rounded-xl">Save Record</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -379,7 +352,7 @@ const Records = () => {
           size="sm"
           variant={filter === "all" ? "default" : "outline"}
           onClick={() => setFilter("all")}
-          className={filter === "all" ? "bg-primary text-primary-foreground" : ""}
+          className={filter === "all" ? "btn-gradient rounded-full shadow-sm" : "rounded-full"}
         >
           All
         </Button>
@@ -389,7 +362,7 @@ const Records = () => {
             size="sm"
             variant={filter === c.value ? "default" : "outline"}
             onClick={() => setFilter(c.value)}
-            className={filter === c.value ? "bg-primary text-primary-foreground" : ""}
+            className={filter === c.value ? "btn-gradient rounded-full shadow-sm" : "rounded-full border-border/60"}
           >
             {c.label}
           </Button>
@@ -402,9 +375,11 @@ const Records = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : records.length === 0 ? (
-        <Card className="border-border glass">
+        <Card className="card-glow">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 mb-4">
+              <FileText className="h-8 w-8 text-primary/40" />
+            </div>
             <p className="text-muted-foreground">No records found. Add your first medical record.</p>
           </CardContent>
         </Card>
@@ -415,17 +390,19 @@ const Records = () => {
               key={record.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
+              transition={{ delay: i * 0.04 }}
             >
-              <Card className="border-border glass group">
-                <CardContent className="flex items-start gap-4 p-5">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <FileText className="h-5 w-5 text-primary" />
+              <Card className="card-glow card-hover group overflow-hidden">
+                <CardContent className="flex items-start gap-4 p-5 relative">
+                  {/* Left accent bar */}
+                  <div className={`absolute left-0 top-0 h-full w-1 ${categoryGradients[record.category] || "gradient-primary"}`} />
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${categoryGradients[record.category] || "gradient-primary"} shadow-sm`}>
+                    <FileText className="h-5 w-5 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground">{record.title}</h3>
-                      <Badge className={categoryColors[record.category] || "bg-muted text-muted-foreground"}>
+                      <Badge className={`${categoryColors[record.category] || "bg-muted text-muted-foreground"} border-0 rounded-full text-xs font-medium`}>
                         {categories.find((c) => c.value === record.category)?.label || record.category}
                       </Badge>
                     </div>
@@ -436,14 +413,13 @@ const Records = () => {
                       <Calendar className="h-3 w-3" />
                       {new Date(record.record_date).toLocaleDateString()}
                     </div>
-                    {/* Attached files */}
                     {documents[record.id] && documents[record.id].length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {documents[record.id].map((doc) => (
                           <button
                             key={doc.id}
                             onClick={() => handleFileDownload(doc)}
-                            className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20 transition-colors"
+                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20 transition-colors font-medium"
                           >
                             <Paperclip className="h-3 w-3" />
                             {doc.file_name}
@@ -453,22 +429,11 @@ const Records = () => {
                       </div>
                     )}
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDownload(record)}
-                      className="text-muted-foreground hover:text-primary"
-                      title="Download Report"
-                    >
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" onClick={() => handleDownload(record)} className="text-muted-foreground hover:text-primary rounded-xl" title="Download Report">
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(record.id)}
-                      className="text-muted-foreground hover:text-destructive"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive rounded-xl">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
