@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, Share2, FileDown, Loader2 } from "lucide-react";
+import { Download, Share2, FileDown, Loader2, QrCode, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,13 +53,11 @@ const QRCodePage = () => {
     if (profile?.blood_type) lines.push(`Blood: ${profile.blood_type}`);
     if (profile?.phone_number) lines.push(`Phone: ${profile.phone_number}`);
     if (profile?.allergies?.length) lines.push(`Allergies: ${profile.allergies.join(", ")}`);
-
     lines.push("");
     lines.push("── Emergency Contact ──");
     lines.push(`Name: ${profile?.emergency_contact_name || "N/A"}`);
     lines.push(`Phone: ${profile?.emergency_contact_phone || "N/A"}`);
     lines.push(`Relation: ${profile?.emergency_contact_relationship || "N/A"}`);
-
     if (records.length > 0) {
       lines.push("");
       lines.push("── Medical Records ──");
@@ -71,7 +69,6 @@ const QRCodePage = () => {
       });
       if (records.length > 10) lines.push(`...and ${records.length - 10} more`);
     }
-
     lines.push("");
     lines.push(`Generated: ${new Date().toLocaleDateString()}`);
     return lines.join("\n");
@@ -113,7 +110,6 @@ const QRCodePage = () => {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       let y = 20;
-
       doc.setFontSize(22);
       doc.setFont("helvetica", "bold");
       doc.text("AROGYA", pageWidth / 2, y, { align: "center" });
@@ -128,14 +124,12 @@ const QRCodePage = () => {
       doc.setLineWidth(0.5);
       doc.line(20, y, pageWidth - 20, y);
       y += 10;
-
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text("Patient Information", 20, y);
       y += 8;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-
       const info = [
         ["Full Name", profile?.full_name || "N/A"],
         ["Date of Birth", profile?.date_of_birth ? new Date(profile.date_of_birth).toLocaleDateString() : "N/A"],
@@ -144,7 +138,6 @@ const QRCodePage = () => {
         ["Wallet Address", profile?.wallet_address || "N/A"],
         ["Allergies", profile?.allergies?.length ? profile.allergies.join(", ") : "None reported"],
       ];
-
       info.forEach(([label, value]) => {
         doc.setFont("helvetica", "bold");
         doc.text(`${label}:`, 20, y);
@@ -152,9 +145,7 @@ const QRCodePage = () => {
         doc.text(value, 70, y);
         y += 6;
       });
-
       y += 6;
-
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(220, 50, 50);
@@ -162,13 +153,11 @@ const QRCodePage = () => {
       doc.setTextColor(0);
       y += 8;
       doc.setFontSize(10);
-
       const emergency = [
         ["Name", profile?.emergency_contact_name || "N/A"],
         ["Phone", profile?.emergency_contact_phone || "N/A"],
         ["Relationship", profile?.emergency_contact_relationship || "N/A"],
       ];
-
       emergency.forEach(([label, value]) => {
         doc.setFont("helvetica", "bold");
         doc.text(`${label}:`, 20, y);
@@ -176,19 +165,15 @@ const QRCodePage = () => {
         doc.text(value, 70, y);
         y += 6;
       });
-
       y += 6;
-
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text("Medical Records", 20, y);
       y += 8;
-
       if (records.length === 0) {
         doc.setFontSize(10);
         doc.setFont("helvetica", "italic");
         doc.text("No medical records found.", 20, y);
-        y += 8;
       } else {
         doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
@@ -199,7 +184,6 @@ const QRCodePage = () => {
         doc.text("Title", 90, y);
         doc.text("Description", 140, y);
         y += 8;
-
         doc.setFont("helvetica", "normal");
         records.forEach((record) => {
           if (y > 270) { doc.addPage(); y = 20; }
@@ -215,10 +199,8 @@ const QRCodePage = () => {
           y += 6;
         });
       }
-
       y += 8;
       if (y > 220) { doc.addPage(); y = 20; }
-
       doc.setFontSize(14);
       doc.setFont("helvetica", "bold");
       doc.text("QR Code for Record Access", 20, y);
@@ -227,7 +209,6 @@ const QRCodePage = () => {
       doc.setFont("helvetica", "normal");
       doc.text(qrValue, 20, y);
       y += 8;
-
       const svg = document.querySelector("#patient-qr svg");
       if (svg) {
         const svgData = new XMLSerializer().serializeToString(svg);
@@ -244,16 +225,11 @@ const QRCodePage = () => {
         doc.addImage(qrDataUrl, "PNG", 20, y, 50, 50);
         y += 55;
       }
-
       y += 5;
       doc.setFontSize(8);
       doc.setTextColor(150);
-      doc.text(
-        `Generated by Arogya on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`,
-        pageWidth / 2, y, { align: "center" }
-      );
+      doc.text(`Generated by Arogya on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, pageWidth / 2, y, { align: "center" });
       doc.text("This document is confidential. Handle with care.", pageWidth / 2, y + 5, { align: "center" });
-
       doc.save(`Arogya_Summary_${profile?.full_name?.replace(/\s/g, "_") || "Patient"}.pdf`);
       toast.success("PDF summary downloaded!");
     } catch (err) {
@@ -265,73 +241,89 @@ const QRCodePage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      <div className="text-center">
-        <h1 className="font-display text-2xl font-bold tracking-wider text-foreground">
-          Your QR Code & Summary
+    <div className="flex flex-col items-center space-y-8">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Your <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">QR Code</span> & Summary
         </h1>
-        <p className="text-sm text-muted-foreground">
-          Share your QR code or download a full PDF summary with all your medical details
+        <p className="text-sm text-muted-foreground mt-1">
+          Share your <span className="text-accent font-medium">secure QR code</span> or download a full PDF summary
         </p>
-      </div>
+      </motion.div>
 
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-        <Card className="border-border/30 glass w-[400px] neon-border">
-          <CardHeader className="text-center">
-            <CardTitle className="font-display text-lg tracking-wider bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
+        <Card className="glass-strong w-[420px] max-w-full rounded-3xl border-0 overflow-hidden">
+          {/* Animated top border */}
+          <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-primary animate-gradient-shift bg-[length:200%_200%]" />
+
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary shadow-lg animate-float">
+              <QrCode className="h-6 w-6 text-white" />
+            </div>
+            <CardTitle className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {profile?.full_name || "Patient"}
             </CardTitle>
             <CardDescription className="space-y-1">
-              <span className="block font-mono text-xs text-primary">Patient Code: {(profile as any)?.patient_code || "N/A"}</span>
+              <span className="block font-mono text-xs text-primary">
+                Code: <span className="text-accent">{(profile as any)?.patient_code || "N/A"}</span>
+              </span>
               <span className="block text-muted-foreground">
-              {[
-                profile?.blood_type && `Blood: ${profile.blood_type}`,
-                profile?.allergies?.length && `Allergies: ${profile.allergies.join(", ")}`,
-              ]
-                .filter(Boolean)
-                .join(" • ")}
+                {[
+                  profile?.blood_type && `Blood: ${profile.blood_type}`,
+                  profile?.allergies?.length && `Allergies: ${profile.allergies.join(", ")}`,
+                ].filter(Boolean).join(" • ")}
               </span>
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center space-y-6">
-            <div id="patient-qr" className="rounded-2xl bg-white p-6 glow-primary">
+
+          <CardContent className="flex flex-col items-center space-y-6 pb-8">
+            <div id="patient-qr" className="relative rounded-2xl bg-white p-6 shadow-lg">
               <QRCodeSVG value={qrValue} size={220} level="H" fgColor="#0d1117" bgColor="#ffffff" />
+              {/* Corner accents */}
+              <div className="absolute top-0 left-0 h-4 w-4 rounded-br-lg border-t-2 border-l-2 border-primary" />
+              <div className="absolute top-0 right-0 h-4 w-4 rounded-bl-lg border-t-2 border-r-2 border-accent" />
+              <div className="absolute bottom-0 left-0 h-4 w-4 rounded-tr-lg border-b-2 border-l-2 border-accent" />
+              <div className="absolute bottom-0 right-0 h-4 w-4 rounded-tl-lg border-b-2 border-r-2 border-primary" />
             </div>
 
             <div className="flex flex-wrap justify-center gap-3">
-              <Button variant="outline" onClick={handleDownloadQR} className="gap-2 border-border/30">
+              <Button variant="outline" onClick={handleDownloadQR} className="gap-2 rounded-xl border-border/30 hover:border-primary/40 transition-colors">
                 <Download className="h-4 w-4" />
                 QR Image
               </Button>
-              <Button variant="outline" onClick={handleShare} className="gap-2 border-border/30">
+              <Button variant="outline" onClick={handleShare} className="gap-2 rounded-xl border-border/30 hover:border-accent/40 transition-colors">
                 <Share2 className="h-4 w-4" />
                 Copy Link
               </Button>
               <Button
                 onClick={generatePDF}
                 disabled={isGenerating}
-                className="gap-2 btn-gradient"
+                className="gap-2 btn-gradient rounded-xl shadow-lg hover:shadow-[0_0_25px_hsl(250_85%_65%/0.4)] transition-all"
               >
                 {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                {isGenerating ? "Generating..." : "Download PDF Summary"}
+                {isGenerating ? "Generating..." : "Download PDF"}
               </Button>
             </div>
 
-            <div className="w-full space-y-3 rounded-lg border border-border/30 bg-muted/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-primary">PDF includes:</p>
-              <ul className="space-y-1 text-xs text-muted-foreground">
-                <li>✓ Personal details (name, DOB, blood type)</li>
-                <li>✓ Emergency contacts & allergies</li>
-                <li>✓ Full medical records ({records.length} entries)</li>
-                <li>✓ QR code for digital access</li>
-                <li>✓ Generated timestamp</li>
+            <div className="w-full glass-card rounded-2xl p-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wider bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                PDF includes:
+              </p>
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-primary" /> Personal details (name, DOB, blood type)</li>
+                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-accent" /> Emergency contacts & allergies</li>
+                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(340,82%,52%)]" /> Full medical records (<span className="text-primary font-medium">{records.length}</span> entries)</li>
+                <li className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(38,92%,50%)]" /> QR code for digital access</li>
               </ul>
             </div>
 
-            <div className="rounded-lg border border-border/30 bg-muted/30 p-3 text-center">
+            <div className="glass-card rounded-2xl p-3 text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Shield className="h-3.5 w-3.5 text-accent" />
+                <span className="text-xs font-medium text-accent">Secure Access</span>
+              </div>
               <p className="text-xs text-muted-foreground">
-                When scanned, doctors must authenticate before accessing your records.
-                Emergency info (blood type, allergies) is shown first.
+                Doctors must <span className="text-primary font-medium">authenticate</span> before accessing your records.
               </p>
             </div>
           </CardContent>

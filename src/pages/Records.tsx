@@ -345,8 +345,10 @@ const Records = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Medical Records</h1>
-          <p className="text-sm text-muted-foreground">Your complete medical history</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Medical <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Records</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">Your complete <span className="text-primary font-medium">medical history</span> — secured & organized</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -355,7 +357,7 @@ const Records = () => {
               Add Record
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-vivid border-border/30 sm:max-w-lg rounded-2xl neon-border">
+          <DialogContent className="glass-strong border-border/30 sm:max-w-lg rounded-2xl neon-border">
             <DialogHeader>
               <DialogTitle className="font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Add Medical Record
@@ -485,12 +487,12 @@ const Records = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : records.length === 0 ? (
-        <Card className="card-glow neon-border">
+        <Card className="glass-card rounded-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 mb-4">
-              <FileText className="h-8 w-8 text-primary/40" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl gradient-primary mb-4 animate-float">
+              <FileText className="h-8 w-8 text-white" />
             </div>
-            <p className="text-muted-foreground">No records found. Add your first medical record.</p>
+            <p className="text-muted-foreground">No records found. <span className="text-primary font-medium">Add your first medical record</span>.</p>
           </CardContent>
         </Card>
       ) : (
@@ -505,7 +507,7 @@ const Records = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Card className={`card-glow card-hover group overflow-hidden ${record.is_urgent ? "neon-border glow-urgent" : "neon-border"}`}>
+                <Card className={`glass-card rounded-2xl border-0 card-hover group overflow-hidden ${record.is_urgent ? "glow-urgent" : ""}`}>
                   <CardContent className="flex items-start gap-4 p-5 relative">
                     {/* Left accent bar */}
                     <div className={`absolute left-0 top-0 h-full w-1 ${record.is_urgent ? "bg-destructive" : categoryGradients[record.category] || "gradient-primary"}`} />
