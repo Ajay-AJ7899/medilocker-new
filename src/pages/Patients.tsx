@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Search, UserCheck, Plus, Upload, Paperclip, X, Building2, User, Droplets, AlertTriangle, Calendar, Brain, Bone, Eye, Radio, Sparkles, Loader2, Stethoscope, Heart, Phone, Shield } from "lucide-react";
+import { Search, UserCheck, Plus, Upload, Paperclip, X, Building2, User, Droplets, AlertTriangle, Calendar, Brain, Bone, Eye, Radio, Sparkles, Loader2, Stethoscope, Heart, Phone, Shield, FileText, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
