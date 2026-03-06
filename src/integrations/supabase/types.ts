@@ -154,10 +154,12 @@ export type Database = {
       medical_records: {
         Row: {
           added_by: string | null
+          ai_analysis: string | null
           category: Database["public"]["Enums"]["record_category"]
           created_at: string
           description: string | null
           id: string
+          is_urgent: boolean
           metadata: Json | null
           patient_id: string
           record_date: string
@@ -166,10 +168,12 @@ export type Database = {
         }
         Insert: {
           added_by?: string | null
+          ai_analysis?: string | null
           category: Database["public"]["Enums"]["record_category"]
           created_at?: string
           description?: string | null
           id?: string
+          is_urgent?: boolean
           metadata?: Json | null
           patient_id: string
           record_date?: string
@@ -178,10 +182,12 @@ export type Database = {
         }
         Update: {
           added_by?: string | null
+          ai_analysis?: string | null
           category?: Database["public"]["Enums"]["record_category"]
           created_at?: string
           description?: string | null
           id?: string
+          is_urgent?: boolean
           metadata?: Json | null
           patient_id?: string
           record_date?: string
