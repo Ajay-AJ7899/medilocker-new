@@ -53,10 +53,15 @@ const Patients = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [files, setFiles] = useState<File[]>([]);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingDocs, setIsUploadingDocs] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedScanType, setSelectedScanType] = useState("");
   const [markUrgent, setMarkUrgent] = useState(false);
+  const [patientRecords, setPatientRecords] = useState<any[]>([]);
+  const [patientDocuments, setPatientDocuments] = useState<Record<string, any[]>>({});
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [newRecord, setNewRecord] = useState({
     category: "",
     title: "",
