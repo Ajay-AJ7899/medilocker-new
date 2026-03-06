@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Search, UserCheck, Plus, Upload, Paperclip, X, Building2, User, Droplets, AlertTriangle, Calendar, Brain, Bone, Eye, Radio, Sparkles, Loader2, Stethoscope, Heart, Phone, Shield } from "lucide-react";
+import { Search, UserCheck, Plus, Upload, Paperclip, X, Building2, User, Droplets, AlertTriangle, Calendar, Brain, Bone, Eye, Radio, Sparkles, Loader2, Stethoscope, Heart, Phone, Shield, FileText, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -53,10 +53,15 @@ const Patients = () => {
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
   const [files, setFiles] = useState<File[]>([]);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingDocs, setIsUploadingDocs] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedScanType, setSelectedScanType] = useState("");
   const [markUrgent, setMarkUrgent] = useState(false);
+  const [patientRecords, setPatientRecords] = useState<any[]>([]);
+  const [patientDocuments, setPatientDocuments] = useState<Record<string, any[]>>({});
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [newRecord, setNewRecord] = useState({
     category: "",
     title: "",
@@ -83,8 +88,106 @@ const Patients = () => {
     } else {
       setPatient(data as PatientProfile);
       toast.success(`Patient found: ${(data as PatientProfile).full_name || "Unknown"}`);
+      // Auto-fetch records
+      fetchPatientRecords((data as PatientProfile).user_id);
     }
     setIsSearching(false);
+  };
+
+  const fetchPatientRecords = async (patientUserId: string) => {
+    setIsLoadingRecords(true);
+    const { data: recs } = await supabase
+      .from("medical_records")
+      .select("*")
+      .eq("patient_id", patientUserId)
+      .order("is_urgent", { ascending: false })
+      .order("record_date", { ascending: false });
+
+    const records = recs || [];
+    setPatientRecords(records);
+
+    if (records.length > 0) {
+      const recordIds = records.map((r: any) => r.id);
+      const { data: docs } = await supabase
+        .from("medical_documents")
+        .select("*")
+        .in("record_id", recordIds);
+      if (docs) {
+        const grouped: Record<string, any[]> = {};
+        docs.forEach((d: any) => {
+          if (d.record_id) {
+            if (!grouped[d.record_id]) grouped[d.record_id] = [];
+            grouped[d.record_id].push(d);
+          }
+        });
+        setPatientDocuments(grouped);
+      }
+    }
+    setIsLoadingRecords(false);
+  };
+
+  const handleDocFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selected = Array.from(e.target.files);
+      if (selected.length + docFiles.length > 5) { toast.error("Maximum 5 files allowed."); return; }
+      setDocFiles((prev) => [...prev, ...selected]);
+    }
+  };
+
+  const handleUploadDocuments = async () => {
+    if (!user || !patient || docFiles.length === 0) {
+      toast.error("Select files to upload.");
+      return;
+    }
+    setIsUploadingDocs(true);
+    try {
+      for (const file of docFiles) {
+        const filePath = `${patient.user_id}/standalone/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("medical-documents").upload(filePath, file);
+        if (uploadError) { console.error("Upload error:", uploadError); continue; }
+        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(filePath);
+        await supabase.from("medical_documents").insert({
+          patient_id: patient.user_id,
+          file_name: file.name,
+          file_url: urlData.publicUrl || filePath,
+          file_type: file.type || "unknown",
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
+      }
+      toast.success(`${docFiles.length} document(s) uploaded to ${patient.full_name || "patient"}'s records!`);
+      setDocFiles([]);
+      fetchPatientRecords(patient.user_id);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload documents.");
+    } finally {
+      setIsUploadingDocs(false);
+    }
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    try {
+      const urlParts = doc.file_url.split("/medical-documents/");
+      const filePath = urlParts.length > 1 ? urlParts[urlParts.length - 1] : null;
+      if (filePath) {
+        const { data } = await supabase.storage.from("medical-documents").createSignedUrl(decodeURIComponent(filePath), 60);
+        if (data?.signedUrl) {
+          const link = document.createElement("a");
+          link.href = data.signedUrl;
+          link.download = doc.file_name;
+          link.target = "_blank";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success(`Downloading ${doc.file_name}`);
+          return;
+        }
+      }
+      window.open(doc.file_url, "_blank");
+    } catch {
+      toast.error("Failed to download file.");
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,6 +279,8 @@ const Patients = () => {
     setMarkUrgent(false);
     setNewRecord({ category: "", title: "", description: "", record_date: new Date().toISOString().split("T")[0], hospital_name: "" });
     setIsUploading(false);
+    // Refresh records view
+    if (patient) fetchPatientRecords(patient.user_id);
   };
 
   const calculateAge = (dob: string | null) => {
@@ -233,6 +338,7 @@ const Patients = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-lg font-bold text-foreground">{patient.full_name || "Unknown Patient"}</p>
+                  <p className="text-xs font-mono text-accent font-bold tracking-widest mt-0.5">ID: {patient.patient_code}</p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                     <span className="font-mono text-primary">#{patient.patient_code}</span>
                     {patient.blood_type && <span className="flex items-center gap-1"><Droplets className="h-3 w-3" />{patient.blood_type}</span>}
@@ -248,9 +354,11 @@ const Patients = () => {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 bg-muted rounded-xl">
-                <TabsTrigger value="details" className="rounded-lg">Patient Details</TabsTrigger>
-                <TabsTrigger value="add-record" className="rounded-lg">Add Record</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-muted rounded-xl">
+                <TabsTrigger value="details" className="rounded-lg text-xs">Details</TabsTrigger>
+                <TabsTrigger value="records" className="rounded-lg text-xs">Records</TabsTrigger>
+                <TabsTrigger value="upload" className="rounded-lg text-xs">Upload Docs</TabsTrigger>
+                <TabsTrigger value="add-record" className="rounded-lg text-xs">Add Record</TabsTrigger>
               </TabsList>
 
               {/* Details Tab */}
@@ -301,6 +409,143 @@ const Patients = () => {
                           <p className="text-xs text-destructive font-medium">Emergency Contact</p>
                           <p className="text-sm font-medium text-foreground">{patient.emergency_contact_name} — {patient.emergency_contact_phone}</p>
                         </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* View Records Tab */}
+              <TabsContent value="records">
+                <Card className="glass-card rounded-2xl border-0">
+                  <CardContent className="p-5">
+                    <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        {patient.full_name}'s Medical Records
+                      </span>
+                      <Badge className="ml-auto bg-primary/15 text-primary border-0 text-xs">{patientRecords.length} records</Badge>
+                    </h3>
+                    {isLoadingRecords ? (
+                      <div className="flex justify-center py-10">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    ) : patientRecords.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">No medical records found for this patient.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                        {patientRecords.map((rec: any, i: number) => {
+                          const scanType = rec.metadata?.scan_type;
+                          return (
+                            <motion.div
+                              key={rec.id}
+                              initial={{ opacity: 0, x: -5 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: i * 0.03 }}
+                              className={`rounded-xl glass-card p-3 ${rec.is_urgent ? "border border-destructive/30 glow-urgent" : ""}`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${rec.is_urgent ? "bg-destructive/20" : "gradient-primary"} shadow-sm`}>
+                                  <FileText className="h-4 w-4 text-white" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="text-sm font-semibold text-foreground">{rec.title}</p>
+                                    {rec.is_urgent && (
+                                      <Badge className="bg-destructive/20 text-destructive border-0 text-xs animate-pulse">URGENT</Badge>
+                                    )}
+                                    {scanType && (
+                                      <Badge className="bg-accent/15 text-accent border-0 text-xs">
+                                        {scanTypes.find(s => s.value === scanType)?.label || scanType}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {rec.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{rec.description}</p>}
+                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(rec.record_date).toLocaleDateString()}
+                                    {rec.added_by === user?.id && <span className="text-primary ml-2">• Added by you</span>}
+                                  </p>
+                                  {rec.ai_analysis && (
+                                    <div className="mt-2 rounded-lg border border-accent/20 bg-accent/5 p-2">
+                                      <p className="text-xs text-accent flex items-center gap-1 mb-0.5"><Sparkles className="h-3 w-3" /> AI Analysis</p>
+                                      <p className="text-xs text-muted-foreground line-clamp-2">{rec.ai_analysis}</p>
+                                    </div>
+                                  )}
+                                  {patientDocuments[rec.id] && patientDocuments[rec.id].length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1.5">
+                                      {patientDocuments[rec.id].map((doc: any) => (
+                                        <button
+                                          key={doc.id}
+                                          onClick={() => handleDocDownload(doc)}
+                                          className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-1 text-xs text-primary hover:bg-primary/20 transition-colors"
+                                        >
+                                          <Paperclip className="h-3 w-3" />
+                                          {doc.file_name}
+                                          <Download className="h-3 w-3 opacity-50" />
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Upload Documents Tab */}
+              <TabsContent value="upload">
+                <Card className="glass-card rounded-2xl border-0">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg gradient-accent">
+                        <Upload className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent font-bold">Upload Documents</span>
+                      <span className="text-xs text-muted-foreground ml-auto">to {patient.full_name || "patient"}'s file</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="rounded-xl border-2 border-dashed border-accent/20 bg-accent/5 p-6 hover:border-accent/40 transition-colors">
+                      <label className="flex cursor-pointer flex-col items-center gap-2">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent shadow-lg">
+                          <Upload className="h-6 w-6 text-white" />
+                        </div>
+                        <span className="text-sm font-medium text-foreground">Upload scans, reports, prescriptions</span>
+                        <span className="text-xs text-muted-foreground">PDF, Images, DICOM files (max 5)</span>
+                        <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.dicom" onChange={handleDocFileChange} className="hidden" />
+                      </label>
+                    </div>
+                    {docFiles.length > 0 && (
+                      <div className="space-y-1.5">
+                        {docFiles.map((file, i) => (
+                          <div key={i} className="flex items-center justify-between rounded-xl glass-card px-3 py-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Paperclip className="h-3 w-3 shrink-0 text-accent" />
+                              <span className="truncate text-sm text-foreground">{file.name}</span>
+                              <span className="shrink-0 text-xs text-muted-foreground">({(file.size / 1024).toFixed(0)}KB)</span>
+                            </div>
+                            <button onClick={() => setDocFiles(prev => prev.filter((_, idx) => idx !== i))} className="text-muted-foreground hover:text-destructive">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        ))}
+                        <Button
+                          onClick={handleUploadDocuments}
+                          disabled={isUploadingDocs}
+                          className="w-full btn-gradient rounded-xl py-4 mt-2"
+                        >
+                          {isUploadingDocs ? (
+                            <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Uploading...</span>
+                          ) : (
+                            <span className="flex items-center gap-2"><Upload className="h-4 w-4" /> Upload {docFiles.length} file(s) to {patient.full_name?.split(" ")[0]}'s Records</span>
+                          )}
+                        </Button>
                       </div>
                     )}
                   </CardContent>
