@@ -357,7 +357,7 @@ const Records = () => {
               Add Record
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-vivid border-border/30 sm:max-w-lg rounded-2xl neon-border">
+          <DialogContent className="glass-strong border-border/30 sm:max-w-lg rounded-2xl neon-border">
             <DialogHeader>
               <DialogTitle className="font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Add Medical Record
