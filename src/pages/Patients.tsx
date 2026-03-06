@@ -336,6 +336,7 @@ const Patients = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-lg font-bold text-foreground">{patient.full_name || "Unknown Patient"}</p>
+                  <p className="text-xs font-mono text-accent font-bold tracking-widest mt-0.5">ID: {patient.patient_code}</p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                     <span className="font-mono text-primary">#{patient.patient_code}</span>
                     {patient.blood_type && <span className="flex items-center gap-1"><Droplets className="h-3 w-3" />{patient.blood_type}</span>}
