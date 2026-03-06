@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, FileText, Calendar, Upload, Trash2, Download, Paperclip, Brain, Bone, Eye, Radio, AlertTriangle, Loader2, Sparkles } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, FileText, Calendar, Upload, Trash2, Download, Paperclip, Brain, Bone, Eye, Radio, AlertTriangle, Loader2, Sparkles, Stethoscope, User } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import jsPDF from "jspdf";
 
 const categories = [
@@ -27,10 +27,10 @@ const categories = [
 ];
 
 const scanTypes = [
-  { value: "xray", label: "X-Ray", icon: Bone, gradient: "gradient-primary" },
-  { value: "ct", label: "CT Scan", icon: Radio, gradient: "gradient-accent" },
-  { value: "mri", label: "MRI", icon: Brain, gradient: "gradient-warm" },
-  { value: "ultrasound", label: "Ultrasound", icon: Eye, gradient: "gradient-sunny" },
+  { value: "xray", label: "X-Ray", icon: Bone, gradient: "gradient-primary", desc: "Radiographic imaging" },
+  { value: "ct", label: "CT Scan", icon: Radio, gradient: "gradient-accent", desc: "Computed tomography" },
+  { value: "mri", label: "MRI", icon: Brain, gradient: "gradient-warm", desc: "Magnetic resonance" },
+  { value: "ultrasound", label: "Ultrasound", icon: Eye, gradient: "gradient-sunny", desc: "Sonographic imaging" },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -86,9 +86,10 @@ interface DoctorInfo {
 }
 
 const Records = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [documents, setDocuments] = useState<Record<string, MedicalDocument[]>>({});
+  const [doctorNames, setDoctorNames] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -124,13 +125,27 @@ const Records = () => {
       const recs = (data as MedicalRecord[]) || [];
       setRecords(recs);
 
+      // Fetch doctor names for records added by others
+      const doctorIds = [...new Set(recs.filter(r => r.added_by && r.added_by !== user.id).map(r => r.added_by!))];
+      if (doctorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", doctorIds);
+        if (profiles) {
+          const names: Record<string, string> = {};
+          profiles.forEach((p: any) => { names[p.user_id] = p.full_name || "Doctor"; });
+          setDoctorNames(names);
+        }
+      }
+
       if (recs.length > 0) {
         const recordIds = recs.map(r => r.id);
         const { data: docs } = await supabase
           .from("medical_documents")
           .select("*")
           .in("record_id", recordIds);
-        
+
         if (docs) {
           const grouped: Record<string, MedicalDocument[]> = {};
           (docs as MedicalDocument[]).forEach(d => {
@@ -194,10 +209,7 @@ const Records = () => {
             .from("medical-documents")
             .upload(filePath, file);
 
-          if (uploadError) {
-            console.error(uploadError);
-            continue;
-          }
+          if (uploadError) { console.error(uploadError); continue; }
           const { data: urlData } = supabase.storage
             .from("medical-documents")
             .getPublicUrl(filePath);
@@ -221,7 +233,6 @@ const Records = () => {
       setSelectedScanType("");
       fetchRecords();
 
-      // Trigger AI analysis if scan type selected
       if (selectedScanType && record) {
         analyzeRecord(record.id, newRecord.title, newRecord.category, selectedScanType, newRecord.description);
       }
@@ -269,7 +280,6 @@ const Records = () => {
         .maybeSingle();
       if (data) doctorInfo = data as DoctorInfo;
     }
-
     const doc = new jsPDF();
     doc.setFontSize(20);
     doc.setTextColor(33, 37, 41);
@@ -341,14 +351,24 @@ const Records = () => {
     return found ? found.icon : FileText;
   };
 
+  const patientName = profile?.full_name || "Patient";
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Medical <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Records</span>
-          </h1>
-          <p className="text-sm text-muted-foreground">Your complete <span className="text-primary font-medium">medical history</span> — secured & organized</p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-accent shadow-lg animate-float">
+            <FileText className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{patientName}'s</span> Records
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Your complete <span className="text-primary font-medium">medical history</span> — secured & organized
+            </p>
+          </div>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
@@ -376,28 +396,31 @@ const Records = () => {
                 </Select>
               </div>
 
-              {/* Scan Type Selector */}
+              {/* Scan Type Selector - Enhanced */}
               <div>
                 <Label className="flex items-center gap-1.5">
                   <Sparkles className="h-3.5 w-3.5 text-accent" />
-                  Scan Type (for imaging)
+                  Medical Imaging Type
                 </Label>
-                <div className="mt-2 grid grid-cols-4 gap-2">
-                  {scanTypes.map(({ value, label, icon: Icon, gradient }) => (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {scanTypes.map(({ value, label, icon: Icon, gradient, desc }) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setSelectedScanType(selectedScanType === value ? "" : value)}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition-all ${
+                      className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-all ${
                         selectedScanType === value
                           ? "border-primary/50 bg-primary/10 text-primary glow-primary"
                           : "border-border/30 bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
                       }`}
                     >
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${selectedScanType === value ? gradient : "bg-muted"}`}>
-                        <Icon className={`h-4 w-4 ${selectedScanType === value ? "text-white" : ""}`} />
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${selectedScanType === value ? gradient : "bg-muted"} transition-all`}>
+                        <Icon className={`h-5 w-5 ${selectedScanType === value ? "text-white" : ""}`} />
                       </div>
-                      {label}
+                      <div>
+                        <p className="text-sm font-semibold">{label}</p>
+                        <p className="text-xs text-muted-foreground">{desc}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -405,11 +428,11 @@ const Records = () => {
 
               <div>
                 <Label>Title *</Label>
-                <Input value={newRecord.title} onChange={(e) => setNewRecord((p) => ({ ...p, title: e.target.value }))} className="mt-1 rounded-xl" />
+                <Input value={newRecord.title} onChange={(e) => setNewRecord((p) => ({ ...p, title: e.target.value }))} className="mt-1 rounded-xl" placeholder="e.g. Chest X-Ray Report" />
               </div>
               <div>
                 <Label>Description</Label>
-                <Textarea value={newRecord.description} onChange={(e) => setNewRecord((p) => ({ ...p, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} />
+                <Textarea value={newRecord.description} onChange={(e) => setNewRecord((p) => ({ ...p, description: e.target.value }))} className="mt-1 rounded-xl" rows={3} placeholder="Notes about the record..." />
               </div>
               <div>
                 <Label>Date</Label>
@@ -418,19 +441,21 @@ const Records = () => {
 
               {/* File Upload */}
               <div>
-                <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Attach Files</Label>
-                <div className="mt-2 rounded-xl border border-dashed border-border/50 bg-muted/30 p-4">
-                  <label className="flex cursor-pointer flex-col items-center gap-1.5">
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Upload reports, scans, prescriptions</span>
-                    <span className="text-xs text-muted-foreground">PDF, Images, Docs (max 5)</span>
+                <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Attach Documents</Label>
+                <div className="mt-2 rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 p-4 hover:border-primary/40 transition-colors">
+                  <label className="flex cursor-pointer flex-col items-center gap-2">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-primary shadow-sm">
+                      <Upload className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="text-sm font-medium text-foreground">Upload reports, scans, prescriptions</span>
+                    <span className="text-xs text-muted-foreground">PDF, Images, DICOM, Docs (max 5 files)</span>
                     <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.dicom" onChange={handleFileChange} className="hidden" />
                   </label>
                 </div>
                 {files.length > 0 && (
                   <div className="mt-2 space-y-1.5">
                     {files.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between rounded-lg bg-muted px-3 py-1.5">
+                      <div key={i} className="flex items-center justify-between rounded-xl glass-card px-3 py-2">
                         <div className="flex items-center gap-2 min-w-0">
                           <Paperclip className="h-3 w-3 shrink-0 text-primary" />
                           <span className="truncate text-sm text-foreground">{file.name}</span>
@@ -447,18 +472,39 @@ const Records = () => {
                 <div className="rounded-xl border border-accent/20 bg-accent/5 p-3">
                   <p className="text-xs text-accent">
                     <Sparkles className="inline h-3 w-3 mr-1" />
-                    AI will automatically analyze this {scanTypes.find(s => s.value === selectedScanType)?.label} scan and flag urgent findings.
+                    AI will automatically analyze this <span className="font-bold">{scanTypes.find(s => s.value === selectedScanType)?.label}</span> scan and flag urgent findings.
                   </p>
                 </div>
               )}
 
-              <Button onClick={handleAdd} className="w-full btn-gradient rounded-xl">Save Record</Button>
+              <Button onClick={handleAdd} className="w-full btn-gradient rounded-xl py-5 text-base font-semibold">Save Record</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Filter */}
+      {/* Scan Type Quick Filters */}
+      <div className="grid grid-cols-4 gap-3">
+        {scanTypes.map(({ value, label, icon: Icon, gradient }) => {
+          const count = records.filter(r => (r.metadata as any)?.scan_type === value).length;
+          return (
+            <motion.button
+              key={value}
+              whileHover={{ y: -2 }}
+              onClick={() => setFilter(filter === value ? "all" : value as any)}
+              className={`glass-card rounded-2xl p-4 text-center transition-all border-0 ${filter === value ? "glow-primary" : ""}`}
+            >
+              <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-xl ${gradient} shadow-sm mb-2`}>
+                <Icon className="h-5 w-5 text-white" />
+              </div>
+              <p className="text-xs font-semibold text-foreground">{label}</p>
+              <p className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{count}</p>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* Category Filter */}
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
@@ -466,7 +512,7 @@ const Records = () => {
           onClick={() => setFilter("all")}
           className={filter === "all" ? "btn-gradient rounded-full shadow-sm" : "rounded-full border-border/30"}
         >
-          All
+          All ({records.length})
         </Button>
         {categories.map((c) => (
           <Button
@@ -484,7 +530,7 @@ const Records = () => {
       {/* Records list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : records.length === 0 ? (
         <Card className="glass-card rounded-2xl border-0">
@@ -492,105 +538,133 @@ const Records = () => {
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl gradient-primary mb-4 animate-float">
               <FileText className="h-8 w-8 text-white" />
             </div>
-            <p className="text-muted-foreground">No records found. <span className="text-primary font-medium">Add your first medical record</span>.</p>
+            <p className="text-lg font-semibold text-foreground mb-1">No records yet</p>
+            <p className="text-muted-foreground text-sm">Add your first medical record or ask your <span className="text-primary font-medium">doctor to add one</span>.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {records.map((record, i) => {
-            const scanType = (record.metadata as any)?.scan_type;
-            const ScanIcon = scanType ? getScanIcon(scanType) : FileText;
-            return (
-              <motion.div
-                key={record.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
-              >
-                <Card className={`glass-card rounded-2xl border-0 card-hover group overflow-hidden ${record.is_urgent ? "glow-urgent" : ""}`}>
-                  <CardContent className="flex items-start gap-4 p-5 relative">
-                    {/* Left accent bar */}
-                    <div className={`absolute left-0 top-0 h-full w-1 ${record.is_urgent ? "bg-destructive" : categoryGradients[record.category] || "gradient-primary"}`} />
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${categoryGradients[record.category] || "gradient-primary"} shadow-sm`}>
-                      <ScanIcon className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-foreground">{record.title}</h3>
-                        <Badge className={`${categoryColors[record.category] || "bg-muted text-muted-foreground"} border-0 rounded-full text-xs font-medium`}>
-                          {categories.find((c) => c.value === record.category)?.label || record.category}
-                        </Badge>
-                        {scanType && (
-                          <Badge className="bg-accent/15 text-accent border-0 rounded-full text-xs">
-                            {scanTypes.find(s => s.value === scanType)?.label}
+          <AnimatePresence>
+            {records.map((record, i) => {
+              const scanType = (record.metadata as any)?.scan_type;
+              const ScanIcon = scanType ? getScanIcon(scanType) : FileText;
+              const addedByDoctor = record.added_by && record.added_by !== user?.id;
+              const doctorName = addedByDoctor ? doctorNames[record.added_by!] : null;
+
+              return (
+                <motion.div
+                  key={record.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ delay: i * 0.03 }}
+                >
+                  <Card className={`glass-card rounded-2xl border-0 card-hover group overflow-hidden ${record.is_urgent ? "glow-urgent" : ""}`}>
+                    <CardContent className="flex items-start gap-4 p-5 relative">
+                      {/* Left accent bar */}
+                      <div className={`absolute left-0 top-0 h-full w-1 ${record.is_urgent ? "bg-destructive" : categoryGradients[record.category] || "gradient-primary"}`} />
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${categoryGradients[record.category] || "gradient-primary"} shadow-sm transition-transform group-hover:scale-105`}>
+                        <ScanIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-foreground">{record.title}</h3>
+                          <Badge className={`${categoryColors[record.category] || "bg-muted text-muted-foreground"} border-0 rounded-full text-xs font-medium`}>
+                            {categories.find((c) => c.value === record.category)?.label || record.category}
                           </Badge>
+                          {scanType && (
+                            <Badge className="bg-accent/15 text-accent border-0 rounded-full text-xs">
+                              {scanTypes.find(s => s.value === scanType)?.label}
+                            </Badge>
+                          )}
+                          {record.is_urgent && (
+                            <Badge className="bg-destructive/20 text-destructive border-0 rounded-full text-xs animate-pulse font-bold">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              URGENT
+                            </Badge>
+                          )}
+                        </div>
+                        {record.description && (
+                          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{record.description}</p>
                         )}
-                        {record.is_urgent && (
-                          <Badge className="bg-destructive/20 text-destructive border-0 rounded-full text-xs animate-pulse font-bold">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            URGENT
-                          </Badge>
+                        <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(record.record_date).toLocaleDateString()}
+                          </span>
+                          {addedByDoctor && (
+                            <span className="flex items-center gap-1 text-primary font-medium">
+                              <Stethoscope className="h-3 w-3" />
+                              Added by Dr. {doctorName || "Doctor"}
+                            </span>
+                          )}
+                          {!addedByDoctor && record.added_by && (
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              Self-added
+                            </span>
+                          )}
+                        </div>
+
+                        {/* AI Analysis */}
+                        {record.ai_analysis && (
+                          <div className={`mt-3 rounded-xl border p-3 text-sm ${record.is_urgent ? "border-destructive/20 bg-destructive/5" : "border-accent/20 bg-accent/5"}`}>
+                            <p className="text-xs font-semibold text-accent mb-1 flex items-center gap-1">
+                              <Sparkles className="h-3 w-3" /> AI Analysis
+                            </p>
+                            <p className="text-muted-foreground text-xs leading-relaxed">{record.ai_analysis}</p>
+                          </div>
+                        )}
+
+                        {isAnalyzing === record.id && (
+                          <div className="mt-3 flex items-center gap-2 text-xs text-accent">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Analyzing with AI...
+                          </div>
+                        )}
+
+                        {documents[record.id] && documents[record.id].length > 0 && (
+                          <div className="mt-3">
+                            <p className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                              <Paperclip className="h-3 w-3" /> Attached Documents ({documents[record.id].length})
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {documents[record.id].map((doc) => (
+                                <button
+                                  key={doc.id}
+                                  onClick={() => handleFileDownload(doc)}
+                                  className="inline-flex items-center gap-1.5 rounded-xl glass-card px-3 py-1.5 text-xs text-primary hover:glow-primary transition-all font-medium"
+                                >
+                                  <Paperclip className="h-3 w-3" />
+                                  {doc.file_name}
+                                  <Download className="h-3 w-3 opacity-50" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
-                      {record.description && (
-                        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{record.description}</p>
-                      )}
-                      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(record.record_date).toLocaleDateString()}
-                      </div>
-
-                      {/* AI Analysis */}
-                      {record.ai_analysis && (
-                        <div className={`mt-3 rounded-xl border p-3 text-sm ${record.is_urgent ? "border-destructive/20 bg-destructive/5" : "border-accent/20 bg-accent/5"}`}>
-                          <p className="text-xs font-semibold text-accent mb-1 flex items-center gap-1">
-                            <Sparkles className="h-3 w-3" /> AI Analysis
-                          </p>
-                          <p className="text-muted-foreground text-xs">{record.ai_analysis}</p>
-                        </div>
-                      )}
-
-                      {isAnalyzing === record.id && (
-                        <div className="mt-3 flex items-center gap-2 text-xs text-accent">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Analyzing with AI...
-                        </div>
-                      )}
-
-                      {documents[record.id] && documents[record.id].length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {documents[record.id].map((doc) => (
-                            <button
-                              key={doc.id}
-                              onClick={() => handleFileDownload(doc)}
-                              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20 transition-colors font-medium"
-                            >
-                              <Paperclip className="h-3 w-3" />
-                              {doc.file_name}
-                              <Download className="h-3 w-3" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {scanType && !record.ai_analysis && (
-                        <Button variant="ghost" size="icon" onClick={() => analyzeRecord(record.id, record.title, record.category, scanType, record.description || "")} className="text-accent hover:text-accent rounded-xl" title="AI Analyze">
-                          <Sparkles className="h-4 w-4" />
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {scanType && !record.ai_analysis && (
+                          <Button variant="ghost" size="icon" onClick={() => analyzeRecord(record.id, record.title, record.category, scanType, record.description || "")} className="text-accent hover:text-accent rounded-xl" title="AI Analyze">
+                            <Sparkles className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" onClick={() => handleDownload(record)} className="text-muted-foreground hover:text-primary rounded-xl" title="Download Report">
+                          <Download className="h-4 w-4" />
                         </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => handleDownload(record)} className="text-muted-foreground hover:text-primary rounded-xl" title="Download Report">
-                        <Download className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive rounded-xl">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                        {(!record.added_by || record.added_by === user?.id) && (
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive rounded-xl">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       )}
     </div>

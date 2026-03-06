@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Heart, FileText, QrCode, MessageCircle, Activity, Pill, Calendar, Plus, ArrowUpRight, TrendingUp } from "lucide-react";
+import { Heart, FileText, QrCode, MessageCircle, Activity, Pill, Calendar, Plus, ArrowUpRight, TrendingUp, Sparkles, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -42,6 +42,8 @@ const Dashboard = () => {
     if (score >= 20) return "text-health-poor";
     return "text-health-critical";
   };
+
+  const firstName = profile?.full_name?.split(" ")[0] || "User";
 
   const stats = [
     {
@@ -89,15 +91,23 @@ const Dashboard = () => {
     <div className="space-y-8">
       {/* Greeting */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Welcome back,{" "}
-          <span className="bg-gradient-to-r from-primary via-[hsl(280,80%,60%)] to-accent bg-clip-text text-transparent">
-            {profile?.full_name?.split(" ")[0] || "User"}
-          </span>
-        </h1>
-        <p className="mt-1 text-muted-foreground">
-          {hasRole("doctor") ? "Doctor Dashboard" : hasRole("admin") ? "Admin Dashboard" : "Your health at a glance"}
-        </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-accent shadow-lg animate-float">
+            <User className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+              Welcome back,{" "}
+              <span className="bg-gradient-to-r from-primary via-[hsl(280,80%,60%)] to-accent bg-clip-text text-transparent">
+                {firstName}
+              </span>
+            </h1>
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-accent" />
+              Your <span className="text-primary font-medium">health at a glance</span> — powered by AI
+            </p>
+          </div>
+        </div>
       </motion.div>
 
       {/* Stats */}
@@ -111,7 +121,6 @@ const Dashboard = () => {
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="group relative"
           >
-            {/* Glow on hover */}
             <div
               className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
               style={{ background: s.glow }}
@@ -133,7 +142,9 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div>
-        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Quick Actions</h2>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">
+          Quick <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Actions</span>
+        </h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {quickActions.map(({ label, icon: Icon, to, gradient }, i) => (
             <motion.div
