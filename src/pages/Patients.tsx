@@ -88,8 +88,106 @@ const Patients = () => {
     } else {
       setPatient(data as PatientProfile);
       toast.success(`Patient found: ${(data as PatientProfile).full_name || "Unknown"}`);
+      // Auto-fetch records
+      fetchPatientRecords((data as PatientProfile).user_id);
     }
     setIsSearching(false);
+  };
+
+  const fetchPatientRecords = async (patientUserId: string) => {
+    setIsLoadingRecords(true);
+    const { data: recs } = await supabase
+      .from("medical_records")
+      .select("*")
+      .eq("patient_id", patientUserId)
+      .order("is_urgent", { ascending: false })
+      .order("record_date", { ascending: false });
+
+    const records = recs || [];
+    setPatientRecords(records);
+
+    if (records.length > 0) {
+      const recordIds = records.map((r: any) => r.id);
+      const { data: docs } = await supabase
+        .from("medical_documents")
+        .select("*")
+        .in("record_id", recordIds);
+      if (docs) {
+        const grouped: Record<string, any[]> = {};
+        docs.forEach((d: any) => {
+          if (d.record_id) {
+            if (!grouped[d.record_id]) grouped[d.record_id] = [];
+            grouped[d.record_id].push(d);
+          }
+        });
+        setPatientDocuments(grouped);
+      }
+    }
+    setIsLoadingRecords(false);
+  };
+
+  const handleDocFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selected = Array.from(e.target.files);
+      if (selected.length + docFiles.length > 5) { toast.error("Maximum 5 files allowed."); return; }
+      setDocFiles((prev) => [...prev, ...selected]);
+    }
+  };
+
+  const handleUploadDocuments = async () => {
+    if (!user || !patient || docFiles.length === 0) {
+      toast.error("Select files to upload.");
+      return;
+    }
+    setIsUploadingDocs(true);
+    try {
+      for (const file of docFiles) {
+        const filePath = `${patient.user_id}/standalone/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from("medical-documents").upload(filePath, file);
+        if (uploadError) { console.error("Upload error:", uploadError); continue; }
+        const { data: urlData } = supabase.storage.from("medical-documents").getPublicUrl(filePath);
+        await supabase.from("medical_documents").insert({
+          patient_id: patient.user_id,
+          file_name: file.name,
+          file_url: urlData.publicUrl || filePath,
+          file_type: file.type || "unknown",
+          file_size: file.size,
+          uploaded_by: user.id,
+        });
+      }
+      toast.success(`${docFiles.length} document(s) uploaded to ${patient.full_name || "patient"}'s records!`);
+      setDocFiles([]);
+      fetchPatientRecords(patient.user_id);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to upload documents.");
+    } finally {
+      setIsUploadingDocs(false);
+    }
+  };
+
+  const handleDocDownload = async (doc: any) => {
+    try {
+      const urlParts = doc.file_url.split("/medical-documents/");
+      const filePath = urlParts.length > 1 ? urlParts[urlParts.length - 1] : null;
+      if (filePath) {
+        const { data } = await supabase.storage.from("medical-documents").createSignedUrl(decodeURIComponent(filePath), 60);
+        if (data?.signedUrl) {
+          const link = document.createElement("a");
+          link.href = data.signedUrl;
+          link.download = doc.file_name;
+          link.target = "_blank";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success(`Downloading ${doc.file_name}`);
+          return;
+        }
+      }
+      window.open(doc.file_url, "_blank");
+    } catch {
+      toast.error("Failed to download file.");
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
