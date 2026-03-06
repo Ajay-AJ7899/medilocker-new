@@ -507,7 +507,7 @@ const Records = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Card className={`card-glow card-hover group overflow-hidden ${record.is_urgent ? "neon-border glow-urgent" : "neon-border"}`}>
+                <Card className={`glass-card rounded-2xl border-0 card-hover group overflow-hidden ${record.is_urgent ? "glow-urgent" : ""}`}>
                   <CardContent className="flex items-start gap-4 p-5 relative">
                     {/* Left accent bar */}
                     <div className={`absolute left-0 top-0 h-full w-1 ${record.is_urgent ? "bg-destructive" : categoryGradients[record.category] || "gradient-primary"}`} />
