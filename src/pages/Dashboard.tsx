@@ -44,6 +44,7 @@ const Dashboard = () => {
   };
 
   const firstName = profile?.full_name?.split(" ")[0] || "User";
+  const patientCode = (profile as any)?.patient_code || null;
 
   const stats = [
     {
