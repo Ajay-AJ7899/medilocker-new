@@ -181,7 +181,7 @@ const Records = () => {
           description: newRecord.description || null,
           record_date: newRecord.record_date,
           metadata,
-        })
+        } as any)
         .select()
         .single();
 
