@@ -1,99 +1,145 @@
 
 
-# Beautify & Humanize the Prediction UI
+# Arogya UI Transformation Plan
 
-The current prediction pages feel flat, repetitive, and template-like. This plan transforms them into warm, polished, professional medical dashboards that feel hand-crafted and inviting.
+## 1. Rename: MediLocker → Arogya
 
-## What Changes
+Replace all "MediLocker" / "medilocker" / "MedChain" references across the entire codebase:
 
-### 1. Doctor Predictions Page (`DoctorPredictions.tsx`)
+**Files to update:**
+- `index.html` — title, meta tags
+- `src/pages/Landing.tsx` — logo, welcome badge
+- `src/pages/Login.tsx` — title, auth message
+- `src/pages/Onboarding.tsx` — step description
+- `src/pages/Records.tsx` — PDF generation text
+- `src/pages/QRCode.tsx` — references
+- `src/pages/ScanQR.tsx` — error messages
+- `src/components/layout/TopNavbar.tsx` — logo text
+- `src/components/layout/AppSidebar.tsx` — logo text
+- `src/contexts/AuthContext.tsx` — localStorage keys (`arogya_active_role`)
+- `src/lib/generatePredictionPDF.ts` — PDF header
+- `supabase/functions/health-chat/index.ts` — system prompt ("Arogya AI")
+- `supabase/functions/metamask-auth/index.ts` — sign message, email domain (`@wallet.arogya.app`)
 
-**Search area redesign:**
-- Replace the plain card with a welcoming hero-style section featuring a gradient background, a stethoscope-themed illustration area, and friendlier copy ("Find your patient" instead of "Patient Code")
-- Rounded search bar with a subtle inner shadow and animated focus ring
-- Empty state: replace the generic Brain icon with a warmer illustration-style layout using a softer message like "Ready when you are" with a gentle pulse animation
+---
 
-**Patient badge:**
-- Add an avatar circle with the patient's initials (colored based on name hash)
-- Add a subtle gradient left-border accent strip
-- Show date of birth as age if available
+## 2. Dark Theme + Bold Colorful UI (BioAge-inspired)
 
-**Prediction selector pills:**
-- Redesign as horizontal scrolling cards with a colored risk dot indicator, micro confidence bar underneath, and a subtle shadow on the active card
+Transform the entire color system to a dark theme with vibrant accents, inspired by the uploaded reference image (deep dark purple/navy background, cyan/teal glowing accents).
 
-**Tab navigation:**
-- Style tabs with rounded pill shape, slight background on active, icons next to each tab label for quick scanning
-- Reduce to 6 tabs by merging "Explainability" into "SHAP" and keeping "Overview", "Risk", "SHAP & Factors", "Prevention", "AI Chat", "Feedback"
+**`src/index.css`** — Complete CSS variable overhaul:
+- `--background`: Deep navy/dark (`230 25% 7%`)
+- `--foreground`: Light white (`230 15% 92%`)
+- `--card`: Dark card surface (`230 20% 11%`)
+- `--primary`: Vibrant purple-blue (`250 85% 65%`)
+- `--accent`: Bright cyan/teal (`172 80% 55%`)
+- `--muted`: Dark muted (`230 15% 18%`)
+- `--border`: Subtle dark borders (`230 15% 18%`)
+- `--sidebar-*`: Dark sidebar variants
+- Update glass utilities for dark glass effect
+- Add new glow/neon animation utilities
+- Add particle-like dot pattern on dark background
+- Card-glow gets cyan/purple glow on hover
 
-**Overview tab:**
-- Stat cards get soft gradient icon backgrounds (green/blue/amber tones based on context, not all the same blue)
-- Confidence gets a small radial progress ring instead of just a number
-- Add a subtle "Last analyzed" timestamp
+**`tailwind.config.ts`** — Add new keyframes:
+- `glow-pulse` — subtle pulsing glow effect
+- `float` — gentle floating animation
 
-**Prevention tab:**
-- Replace numbered circles with themed icons (apple for diet, running figure for exercise, etc.) using Lucide icons
-- Add alternating subtle background tints on items
+**`src/components/layout/AppLayout.tsx`** — Dark gradient background
+**`src/components/layout/TopNavbar.tsx`** — Dark glass navbar with glowing logo
+**`src/pages/Landing.tsx`** — Dark hero with glowing accents, matching BioAge aesthetic
+**`src/pages/Dashboard.tsx`** — Dark stat cards with neon borders
 
-**References tab:**
-- Add favicons/source badges and hover lift effect
+---
 
-**Feedback tab:**
-- Add a warm header message ("Your clinical insight helps improve future predictions")
-- Style the accept/reject buttons with more distinct visual weight -- accept gets a soft green gradient, reject gets an outlined red style
-- After feedback: show a "thank you" style confirmation with a checkmark animation
+## 3. Medical Imaging Sections in Records (Patient Side)
 
-### 2. Patient Predictions Page (`PatientPredictions.tsx`)
+Enhance `src/pages/Records.tsx` to add dedicated imaging upload sections:
 
-**Form redesign:**
-- Group fields into logical sections with subtle dividers ("Basic Info", "Blood Markers", "Lifestyle Indicators")
-- Add gentle field validation with color-coded borders (green when valid range, neutral otherwise)
-- Predict button: add a subtle heartbeat pulse animation when form is valid and idle
+**New imaging categories** added to the upload dialog:
+- X-Ray, CT Scan, MRI, Ultrasound (as a new "scan_type" field when category is relevant)
 
-**Results section:**
-- Risk level card gets a large, prominent colored badge with an icon
-- Add a gentle "wave" divider between form and results
-- Clinical explanation card gets a left-accent border matching risk color
+**Upload dialog redesign:**
+- Add a "Scan Type" selector (X-Ray / CT / MRI / Ultrasound / None) that appears as visual icon cards
+- Drag-and-drop file upload area with preview thumbnails
+- Support multiple file uploads per record
 
-### 3. Risk Summary Card (`RiskSummaryCard.tsx`)
+**Records list enhancement:**
+- Show scan type badge on imaging records (with distinct icons: a bone icon for X-Ray, brain for MRI, etc.)
+- Thumbnail preview for image attachments
 
-- Replace the flat gauge bar with a curved semicircular gauge meter (using SVG) with gradient coloring from green through yellow/orange to red
-- Needle/marker on the gauge pointing to the patient's risk position
-- Confidence ring: make it larger with a label inside ("87.5% sure")
-- Top factors: add small themed icons next to each factor name
+**AI Analysis integration:**
+- After uploading an imaging file, call a new edge function `analyze-scan` that uses Gemini to analyze the image description/metadata
+- Display AI reasoning in a collapsible card below the record
+- Flag urgent findings with a red "URGENT" badge
 
-### 4. SHAP Explanation Card (`ShapExplanationCard.tsx`)
+---
 
-- Use horizontal lollipop-style chart (dot at end of bar) instead of plain bars
-- Add a subtle grid background behind the chart for a more "scientific" feel
-- Color gradient on bars (not just two flat colors) -- from blue to indigo for top factors, amber to orange for moderate
-- Add hover tooltips on each bar showing the full description
+## 4. Urgent Case Flagging
 
-### 5. Prediction Chat (`PredictionChat.tsx`)
+**Database migration:** Add `is_urgent` boolean column to `medical_records` table (default false) and `ai_analysis` text column.
 
-- Summary card: add a subtle medical cross watermark in the background
-- Chat area: softer rounded bubbles with a slight shadow, typing indicator with animated dots (not just a spinner)
-- Bot avatar: use a gradient circle instead of flat icon background
-- Add suggested quick-reply chips below the input ("What does this mean?", "How can I prevent this?", "Is this serious?")
-- Empty state: warmer illustration with conversation bubble graphics
+**Patient Records page:**
+- After AI analysis, if findings suggest urgency, auto-flag the record
+- Urgent records show a pulsing red badge and are pinned to top
+- Manual toggle for patients to mark records as urgent
 
-### 6. Global Styling Touches
+**Doctor Patients page:**
+- Urgent records from patients show with priority indicator
+- Sort urgent records first
 
-- Add micro-interactions: cards slightly lift on hover (`hover:-translate-y-0.5 hover:shadow-md transition-all`)
-- Staggered entrance animations on lists (cards, factors, prevention items)
-- Use the existing `glass` utility class on key cards for depth
-- Vary icon colors contextually (not everything primary blue) -- use emerald for positive, amber for warnings, rose for critical
+---
 
-## Technical Details
+## 5. Doctor Panel — Imaging Upload in Patients Page
+
+Enhance `src/pages/Patients.tsx` "Add Record" tab:
+
+- Add the same scan type selector (X-Ray / CT / MRI / Ultrasound)
+- Visual icon-card selection for scan types
+- Multiple file upload with previews
+- AI analysis trigger button after upload
+- Urgent flag toggle
+
+---
+
+## 6. New Edge Function: `analyze-scan`
+
+**`supabase/functions/analyze-scan/index.ts`:**
+- Accepts: `recordTitle`, `category`, `scanType`, `description`, `patientContext`
+- Uses `google/gemini-3-flash-preview` via Lovable AI Gateway
+- Returns: `{ analysis: string, isUrgent: boolean, urgencyReason: string | null }`
+- System prompt instructs model to analyze medical context and flag urgency
+- Stores analysis result back in `medical_records.metadata` or new `ai_analysis` column
+
+---
+
+## Technical Summary
+
+**Files to create:**
+- `supabase/functions/analyze-scan/index.ts`
 
 **Files to modify:**
-- `src/pages/DoctorPredictions.tsx` -- restructure layout, merge tabs, add gradients and micro-interactions
-- `src/pages/PatientPredictions.tsx` -- group form fields, improve results display
-- `src/components/predictions/RiskSummaryCard.tsx` -- semicircular SVG gauge, enhanced styling
-- `src/components/predictions/ShapExplanationCard.tsx` -- lollipop chart style, grid background
-- `src/components/predictions/PredictionChat.tsx` -- quick-reply chips, typing dots, warmer empty state
-- `src/index.css` -- add a couple utility classes for gradient accents if needed
+- `index.html`
+- `src/index.css`
+- `tailwind.config.ts`
+- `src/components/layout/AppLayout.tsx`
+- `src/components/layout/TopNavbar.tsx`
+- `src/components/layout/AppSidebar.tsx`
+- `src/pages/Landing.tsx`
+- `src/pages/Login.tsx`
+- `src/pages/Onboarding.tsx`
+- `src/pages/Dashboard.tsx`
+- `src/pages/Records.tsx`
+- `src/pages/Patients.tsx`
+- `src/pages/QRCode.tsx`
+- `src/pages/ScanQR.tsx`
+- `src/contexts/AuthContext.tsx`
+- `src/lib/generatePredictionPDF.ts`
+- `supabase/functions/health-chat/index.ts`
+- `supabase/functions/metamask-auth/index.ts`
 
-**No new dependencies required** -- uses existing framer-motion, lucide-react, and Tailwind.
+**Database migration:**
+- Add `is_urgent` (boolean, default false) and `ai_analysis` (text, nullable) columns to `medical_records`
 
-**No database or backend changes needed.**
+**No new npm dependencies needed** — uses existing framer-motion, lucide-react, Tailwind.
 
