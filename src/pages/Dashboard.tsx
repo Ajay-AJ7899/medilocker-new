@@ -100,10 +100,8 @@ const Dashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.08 }}>
-            <Card className="card-glow card-hover overflow-hidden">
+            <Card className="card-glow card-hover overflow-hidden neon-border bg-card">
               <CardContent className="flex items-center gap-4 p-5 relative">
-                {/* Decorative corner */}
-                <div className="absolute -right-3 -top-3 h-16 w-16 rounded-full opacity-[0.07]" style={{ background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))` }} />
                 <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ${s.gradient} shadow-sm`}>
                   <s.icon className="h-6 w-6 text-white" />
                 </div>
@@ -126,7 +124,7 @@ const Dashboard = () => {
               <Button
                 variant="outline"
                 onClick={() => navigate(to)}
-                className="h-auto w-full flex-col gap-3 border-border/60 bg-card py-7 card-hover card-glow group"
+                className="h-auto w-full flex-col gap-3 border-border/30 bg-card py-7 card-hover card-glow group neon-border"
               >
                 <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${color} shadow-sm transition-transform group-hover:scale-110`}>
                   <Icon className="h-5 w-5 text-white" />

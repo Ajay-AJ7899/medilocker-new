@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, FileText, QrCode, Heart, MessageCircle, User, Users,
-  ScanLine, LogOut, Shield, ShieldCheck, Stethoscope, Menu, X,
+  ScanLine, LogOut, Shield, Stethoscope, Menu, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,18 +40,18 @@ const TopNavbar = () => {
   const links = hasRole("admin") ? adminLinks : activeRole === "doctor" ? doctorLinks : patientLinks;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/80 backdrop-blur-xl shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b border-border/30 glass">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 lg:px-6">
         {/* Logo */}
         <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm animate-glow-pulse">
             <Shield className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-bold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            MediLocker
+          <span className="text-lg font-bold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-glow">
+            Arogya
           </span>
         </button>
 
@@ -67,7 +67,7 @@ const TopNavbar = () => {
                   "flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-all",
                   isActive
                     ? "gradient-primary text-primary-foreground shadow-sm glow-primary"
-                    : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -108,7 +108,7 @@ const TopNavbar = () => {
 
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="border-t border-border/50 bg-card/95 backdrop-blur-xl p-3 md:hidden">
+        <div className="border-t border-border/30 glass p-3 md:hidden">
           <nav className="grid grid-cols-3 gap-2">
             {links.map(({ to, label, icon: Icon }) => {
               const isActive = location.pathname === to;
@@ -120,7 +120,7 @@ const TopNavbar = () => {
                     "flex flex-col items-center gap-1 rounded-xl px-2 py-3 text-xs font-medium transition-all",
                     isActive
                       ? "gradient-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-primary/5 hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -129,7 +129,7 @@ const TopNavbar = () => {
               );
             })}
           </nav>
-          <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+          <div className="mt-3 flex items-center justify-between border-t border-border/30 pt-3">
             <div className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-full gradient-accent">
                 <User className="h-3.5 w-3.5 text-accent-foreground" />

@@ -1,18 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FileText,
-  QrCode,
-  Heart,
-  MessageCircle,
-  User,
-  Users,
-  ScanLine,
-  LogOut,
-  Shield,
-  ShieldCheck,
-  Stethoscope,
+  LayoutDashboard, FileText, QrCode, Heart, MessageCircle, User, Users,
+  ScanLine, LogOut, Shield, Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,21 +36,17 @@ const AppSidebar = () => {
     { to: "/profile", label: "Profile", icon: User },
   ];
 
-  const links = hasRole("admin")
-    ? adminLinks
-    : hasRole("doctor")
-    ? doctorLinks
-    : patientLinks;
+  const links = hasRole("admin") ? adminLinks : hasRole("doctor") ? doctorLinks : patientLinks;
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border bg-sidebar">
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-border/30 bg-sidebar">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-border px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 glow-primary">
-          <Shield className="h-5 w-5 text-primary" />
+      <div className="flex h-16 items-center gap-3 border-b border-border/30 px-6">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary animate-glow-pulse">
+          <Shield className="h-5 w-5 text-primary-foreground" />
         </div>
-        <span className="font-display text-lg font-bold tracking-wider text-primary text-glow">
-          MEDILOCKER
+        <span className="font-display text-lg font-bold tracking-wider bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-glow">
+          AROGYA
         </span>
       </div>
 
@@ -75,8 +61,8 @@ const AppSidebar = () => {
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
                 isActive
-                  ? "bg-primary/10 text-primary glow-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground"
+                  ? "gradient-primary text-primary-foreground glow-primary"
+                  : "text-sidebar-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <Icon className="h-4 w-4" />
@@ -87,10 +73,10 @@ const AppSidebar = () => {
       </nav>
 
       {/* User section */}
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border/30 p-4">
         <div className="mb-3 flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20">
-            <User className="h-4 w-4 text-primary" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full gradient-accent">
+            <User className="h-4 w-4 text-accent-foreground" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-foreground">

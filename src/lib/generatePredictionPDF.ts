@@ -27,7 +27,7 @@ export function generatePredictionPDF(
   const addSpacer = (h = 6) => { y += h; };
 
   // Header
-  addLine("MEDILOCKER — Health Prediction Report", 18, true);
+  addLine("AROGYA — Health Prediction Report", 18, true);
   addSpacer(4);
   if (patientName) addLine(`Patient: ${patientName}`, 11, true);
   addLine(`Generated: ${new Date().toLocaleDateString()}`, 9);

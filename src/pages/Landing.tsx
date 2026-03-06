@@ -44,19 +44,19 @@ const Landing = () => {
   return (
     <div className="relative min-h-screen overflow-hidden bg-background">
       {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl animate-float" />
       <div className="pointer-events-none absolute right-0 top-1/3 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-[hsl(340,82%,52%)]/8 blur-3xl" />
 
       <div className="relative z-10">
         {/* Header */}
-        <header className="flex items-center justify-between px-8 py-5 border-b border-border/40 bg-card/70 backdrop-blur-xl">
+        <header className="flex items-center justify-between px-8 py-5 border-b border-border/30 glass">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-sm">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-sm animate-glow-pulse">
               <Shield className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              MediLocker
+            <span className="text-xl font-bold tracking-wide bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent text-glow">
+              Arogya
             </span>
           </div>
           <Button
@@ -76,9 +76,9 @@ const Landing = () => {
             transition={{ duration: 0.8 }}
             className="z-10 flex-1 text-center md:text-left"
           >
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-6">
               <Sparkles className="h-4 w-4" />
-              Welcome to MediLocker
+              Welcome to Arogya
             </div>
             <h1 className="text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl">
               <span className="text-foreground">COMPASSIONATE CARE FOR A </span>
@@ -102,7 +102,7 @@ const Landing = () => {
                 size="lg"
                 variant="outline"
                 onClick={() => navigate("/login")}
-                className="gap-2 rounded-xl px-8 border-primary/30 text-primary hover:bg-primary/5"
+                className="gap-2 rounded-xl px-8 border-primary/30 text-primary hover:bg-primary/10"
               >
                 Learn More
               </Button>
@@ -144,7 +144,7 @@ const Landing = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + i * 0.12, duration: 0.5 }}
-                  className="rounded-2xl border border-border/50 bg-card p-6 card-glow card-hover group"
+                  className="rounded-2xl border border-border/50 bg-card p-6 card-glow card-hover group neon-border"
                 >
                   <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${f.gradient} shadow-sm transition-transform group-hover:scale-110`}>
                     <f.icon className="h-6 w-6 text-white" />

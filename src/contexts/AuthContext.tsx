@@ -56,13 +56,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [activeRole, setActiveRoleState] = useState<AppRole | null>(
-    () => (localStorage.getItem("medilocker_active_role") as AppRole) || null
+    () => (localStorage.getItem("arogya_active_role") as AppRole) || null
   );
   const [isLoading, setIsLoading] = useState(true);
 
   const setActiveRole = useCallback((role: AppRole) => {
     setActiveRoleState(role);
-    localStorage.setItem("medilocker_active_role", role);
+    localStorage.setItem("arogya_active_role", role);
   }, []);
 
   const fetchProfile = useCallback(async (userId: string) => {
@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
     setRoles([]);
     setActiveRoleState(null);
-    localStorage.removeItem("medilocker_active_role");
+    localStorage.removeItem("arogya_active_role");
   };
 
   const hasRole = (role: AppRole) => roles.includes(role);

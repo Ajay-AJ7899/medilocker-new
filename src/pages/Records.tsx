@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, FileText, Calendar, Upload, Trash2, Download, Paperclip } from "lucide-react";
+import { Plus, FileText, Calendar, Upload, Trash2, Download, Paperclip, Brain, Bone, Eye, Radio, AlertTriangle, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 
@@ -24,6 +24,13 @@ const categories = [
   { value: "lab_result", label: "Lab Result" },
   { value: "allergy", label: "Allergy" },
   { value: "vaccination", label: "Vaccination" },
+];
+
+const scanTypes = [
+  { value: "xray", label: "X-Ray", icon: Bone, gradient: "gradient-primary" },
+  { value: "ct", label: "CT Scan", icon: Radio, gradient: "gradient-accent" },
+  { value: "mri", label: "MRI", icon: Brain, gradient: "gradient-warm" },
+  { value: "ultrasound", label: "Ultrasound", icon: Eye, gradient: "gradient-sunny" },
 ];
 
 const categoryColors: Record<string, string> = {
@@ -68,6 +75,8 @@ interface MedicalRecord {
   metadata: Record<string, unknown>;
   created_at: string;
   added_by: string | null;
+  is_urgent: boolean;
+  ai_analysis: string | null;
 }
 
 interface DoctorInfo {
@@ -83,13 +92,15 @@ const Records = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [selectedScanType, setSelectedScanType] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState<string | null>(null);
   const [newRecord, setNewRecord] = useState({
     category: "",
     title: "",
     description: "",
     record_date: new Date().toISOString().split("T")[0],
   });
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const fetchRecords = async () => {
     if (!user) return;
@@ -98,6 +109,7 @@ const Records = () => {
       .from("medical_records")
       .select("*")
       .eq("patient_id", user.id)
+      .order("is_urgent", { ascending: false })
       .order("record_date", { ascending: false });
 
     if (filter !== "all") {
@@ -114,14 +126,12 @@ const Records = () => {
 
       if (recs.length > 0) {
         const recordIds = recs.map(r => r.id);
-        const { data: docs, error: docsError } = await supabase
+        const { data: docs } = await supabase
           .from("medical_documents")
           .select("*")
           .in("record_id", recordIds);
         
-        if (docsError) {
-          console.error("Error fetching documents:", docsError);
-        } else if (docs) {
+        if (docs) {
           const grouped: Record<string, MedicalDocument[]> = {};
           (docs as MedicalDocument[]).forEach(d => {
             const rid = (d as any).record_id;
@@ -141,6 +151,16 @@ const Records = () => {
     fetchRecords();
   }, [user, filter]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selected = Array.from(e.target.files);
+      if (selected.length + files.length > 5) { toast.error("Maximum 5 files allowed."); return; }
+      setFiles(prev => [...prev, ...selected]);
+    }
+  };
+
+  const removeFile = (i: number) => setFiles(prev => prev.filter((_, idx) => idx !== i));
+
   const handleAdd = async () => {
     if (!user || !newRecord.category || !newRecord.title) {
       toast.error("Please fill in the required fields.");
@@ -148,6 +168,9 @@ const Records = () => {
     }
 
     try {
+      const metadata: Record<string, unknown> = {};
+      if (selectedScanType) metadata.scan_type = selectedScanType;
+
       const { data: record, error } = await supabase
         .from("medical_records")
         .insert({
@@ -157,22 +180,24 @@ const Records = () => {
           title: newRecord.title,
           description: newRecord.description || null,
           record_date: newRecord.record_date,
-        })
+          metadata,
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
 
-      if (file && record) {
-        const filePath = `${user.id}/${record.id}/${file.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from("medical-documents")
-          .upload(filePath, file);
+      if (files.length > 0 && record) {
+        for (const file of files) {
+          const filePath = `${user.id}/${record.id}/${Date.now()}_${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from("medical-documents")
+            .upload(filePath, file);
 
-        if (uploadError) {
-          console.error(uploadError);
-          toast.error("Record saved but file upload failed.");
-        } else {
+          if (uploadError) {
+            console.error(uploadError);
+            continue;
+          }
           const { data: urlData } = supabase.storage
             .from("medical-documents")
             .getPublicUrl(filePath);
@@ -191,28 +216,47 @@ const Records = () => {
 
       toast.success("Record added!");
       setIsOpen(false);
-      setNewRecord({
-        category: "",
-        title: "",
-        description: "",
-        record_date: new Date().toISOString().split("T")[0],
-      });
-      setFile(null);
+      setNewRecord({ category: "", title: "", description: "", record_date: new Date().toISOString().split("T")[0] });
+      setFiles([]);
+      setSelectedScanType("");
       fetchRecords();
+
+      // Trigger AI analysis if scan type selected
+      if (selectedScanType && record) {
+        analyzeRecord(record.id, newRecord.title, newRecord.category, selectedScanType, newRecord.description);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to add record.");
     }
   };
 
+  const analyzeRecord = async (recordId: string, title: string, category: string, scanType: string, description: string) => {
+    setIsAnalyzing(recordId);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-scan", {
+        body: { recordId, recordTitle: title, category, scanType, description },
+      });
+      if (error) throw error;
+      if (data?.analysis) {
+        await supabase.from("medical_records")
+          .update({ ai_analysis: data.analysis, is_urgent: data.isUrgent || false } as any)
+          .eq("id", recordId);
+        toast.success(data.isUrgent ? "⚠️ AI flagged this as URGENT!" : "AI analysis complete.");
+        fetchRecords();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("AI analysis failed.");
+    } finally {
+      setIsAnalyzing(null);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("medical_records").delete().eq("id", id);
-    if (error) {
-      toast.error("Failed to delete record.");
-    } else {
-      toast.success("Record deleted.");
-      fetchRecords();
-    }
+    if (error) toast.error("Failed to delete record.");
+    else { toast.success("Record deleted."); fetchRecords(); }
   };
 
   const handleDownload = async (record: MedicalRecord) => {
@@ -229,7 +273,7 @@ const Records = () => {
     const doc = new jsPDF();
     doc.setFontSize(20);
     doc.setTextColor(33, 37, 41);
-    doc.text("MediLocker - Medical Report", 20, 25);
+    doc.text("Arogya - Medical Report", 20, 25);
     doc.setDrawColor(59, 130, 246);
     doc.setLineWidth(0.5);
     doc.line(20, 30, 190, 30);
@@ -260,7 +304,7 @@ const Records = () => {
     }
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(`Generated on ${new Date().toLocaleString()} via MediLocker`, 20, 285);
+    doc.text(`Generated on ${new Date().toLocaleString()} via Arogya`, 20, 285);
     doc.save(`${record.title.replace(/\s+/g, "_")}_report.pdf`);
     toast.success("Report downloaded!");
   };
@@ -292,6 +336,11 @@ const Records = () => {
     }
   };
 
+  const getScanIcon = (scanType: string) => {
+    const found = scanTypes.find(s => s.value === scanType);
+    return found ? found.icon : FileText;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -306,13 +355,13 @@ const Records = () => {
               Add Record
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass-vivid border-border/50 sm:max-w-lg rounded-2xl">
+          <DialogContent className="glass-vivid border-border/30 sm:max-w-lg rounded-2xl neon-border">
             <DialogHeader>
               <DialogTitle className="font-bold tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Add Medical Record
               </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
               <div>
                 <Label>Category *</Label>
                 <Select value={newRecord.category} onValueChange={(v) => setNewRecord((p) => ({ ...p, category: v }))}>
@@ -324,6 +373,34 @@ const Records = () => {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Scan Type Selector */}
+              <div>
+                <Label className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-accent" />
+                  Scan Type (for imaging)
+                </Label>
+                <div className="mt-2 grid grid-cols-4 gap-2">
+                  {scanTypes.map(({ value, label, icon: Icon, gradient }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setSelectedScanType(selectedScanType === value ? "" : value)}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-medium transition-all ${
+                        selectedScanType === value
+                          ? "border-primary/50 bg-primary/10 text-primary glow-primary"
+                          : "border-border/30 bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                      }`}
+                    >
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${selectedScanType === value ? gradient : "bg-muted"}`}>
+                        <Icon className={`h-4 w-4 ${selectedScanType === value ? "text-white" : ""}`} />
+                      </div>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <Label>Title *</Label>
                 <Input value={newRecord.title} onChange={(e) => setNewRecord((p) => ({ ...p, title: e.target.value }))} className="mt-1 rounded-xl" />
@@ -336,10 +413,43 @@ const Records = () => {
                 <Label>Date</Label>
                 <Input type="date" value={newRecord.record_date} onChange={(e) => setNewRecord((p) => ({ ...p, record_date: e.target.value }))} className="mt-1 rounded-xl" />
               </div>
+
+              {/* File Upload */}
               <div>
-                <Label>Attach Document (optional)</Label>
-                <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={(e) => setFile(e.target.files?.[0] || null)} className="mt-1 rounded-xl" />
+                <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> Attach Files</Label>
+                <div className="mt-2 rounded-xl border border-dashed border-border/50 bg-muted/30 p-4">
+                  <label className="flex cursor-pointer flex-col items-center gap-1.5">
+                    <Upload className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Upload reports, scans, prescriptions</span>
+                    <span className="text-xs text-muted-foreground">PDF, Images, Docs (max 5)</span>
+                    <input type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.dicom" onChange={handleFileChange} className="hidden" />
+                  </label>
+                </div>
+                {files.length > 0 && (
+                  <div className="mt-2 space-y-1.5">
+                    {files.map((file, i) => (
+                      <div key={i} className="flex items-center justify-between rounded-lg bg-muted px-3 py-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Paperclip className="h-3 w-3 shrink-0 text-primary" />
+                          <span className="truncate text-sm text-foreground">{file.name}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">({(file.size / 1024).toFixed(0)}KB)</span>
+                        </div>
+                        <button onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {selectedScanType && (
+                <div className="rounded-xl border border-accent/20 bg-accent/5 p-3">
+                  <p className="text-xs text-accent">
+                    <Sparkles className="inline h-3 w-3 mr-1" />
+                    AI will automatically analyze this {scanTypes.find(s => s.value === selectedScanType)?.label} scan and flag urgent findings.
+                  </p>
+                </div>
+              )}
+
               <Button onClick={handleAdd} className="w-full btn-gradient rounded-xl">Save Record</Button>
             </div>
           </DialogContent>
@@ -352,7 +462,7 @@ const Records = () => {
           size="sm"
           variant={filter === "all" ? "default" : "outline"}
           onClick={() => setFilter("all")}
-          className={filter === "all" ? "btn-gradient rounded-full shadow-sm" : "rounded-full"}
+          className={filter === "all" ? "btn-gradient rounded-full shadow-sm" : "rounded-full border-border/30"}
         >
           All
         </Button>
@@ -362,7 +472,7 @@ const Records = () => {
             size="sm"
             variant={filter === c.value ? "default" : "outline"}
             onClick={() => setFilter(c.value)}
-            className={filter === c.value ? "btn-gradient rounded-full shadow-sm" : "rounded-full border-border/60"}
+            className={filter === c.value ? "btn-gradient rounded-full shadow-sm" : "rounded-full border-border/30"}
           >
             {c.label}
           </Button>
@@ -375,7 +485,7 @@ const Records = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : records.length === 0 ? (
-        <Card className="card-glow">
+        <Card className="card-glow neon-border">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 mb-4">
               <FileText className="h-8 w-8 text-primary/40" />
@@ -385,62 +495,100 @@ const Records = () => {
         </Card>
       ) : (
         <div className="space-y-3">
-          {records.map((record, i) => (
-            <motion.div
-              key={record.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-            >
-              <Card className="card-glow card-hover group overflow-hidden">
-                <CardContent className="flex items-start gap-4 p-5 relative">
-                  {/* Left accent bar */}
-                  <div className={`absolute left-0 top-0 h-full w-1 ${categoryGradients[record.category] || "gradient-primary"}`} />
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${categoryGradients[record.category] || "gradient-primary"} shadow-sm`}>
-                    <FileText className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{record.title}</h3>
-                      <Badge className={`${categoryColors[record.category] || "bg-muted text-muted-foreground"} border-0 rounded-full text-xs font-medium`}>
-                        {categories.find((c) => c.value === record.category)?.label || record.category}
-                      </Badge>
+          {records.map((record, i) => {
+            const scanType = (record.metadata as any)?.scan_type;
+            const ScanIcon = scanType ? getScanIcon(scanType) : FileText;
+            return (
+              <motion.div
+                key={record.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+              >
+                <Card className={`card-glow card-hover group overflow-hidden ${record.is_urgent ? "neon-border glow-urgent" : "neon-border"}`}>
+                  <CardContent className="flex items-start gap-4 p-5 relative">
+                    {/* Left accent bar */}
+                    <div className={`absolute left-0 top-0 h-full w-1 ${record.is_urgent ? "bg-destructive" : categoryGradients[record.category] || "gradient-primary"}`} />
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${categoryGradients[record.category] || "gradient-primary"} shadow-sm`}>
+                      <ScanIcon className="h-5 w-5 text-white" />
                     </div>
-                    {record.description && (
-                      <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{record.description}</p>
-                    )}
-                    <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(record.record_date).toLocaleDateString()}
-                    </div>
-                    {documents[record.id] && documents[record.id].length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {documents[record.id].map((doc) => (
-                          <button
-                            key={doc.id}
-                            onClick={() => handleFileDownload(doc)}
-                            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20 transition-colors font-medium"
-                          >
-                            <Paperclip className="h-3 w-3" />
-                            {doc.file_name}
-                            <Download className="h-3 w-3" />
-                          </button>
-                        ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-foreground">{record.title}</h3>
+                        <Badge className={`${categoryColors[record.category] || "bg-muted text-muted-foreground"} border-0 rounded-full text-xs font-medium`}>
+                          {categories.find((c) => c.value === record.category)?.label || record.category}
+                        </Badge>
+                        {scanType && (
+                          <Badge className="bg-accent/15 text-accent border-0 rounded-full text-xs">
+                            {scanTypes.find(s => s.value === scanType)?.label}
+                          </Badge>
+                        )}
+                        {record.is_urgent && (
+                          <Badge className="bg-destructive/20 text-destructive border-0 rounded-full text-xs animate-pulse font-bold">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            URGENT
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" onClick={() => handleDownload(record)} className="text-muted-foreground hover:text-primary rounded-xl" title="Download Report">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive rounded-xl">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                      {record.description && (
+                        <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{record.description}</p>
+                      )}
+                      <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(record.record_date).toLocaleDateString()}
+                      </div>
+
+                      {/* AI Analysis */}
+                      {record.ai_analysis && (
+                        <div className={`mt-3 rounded-xl border p-3 text-sm ${record.is_urgent ? "border-destructive/20 bg-destructive/5" : "border-accent/20 bg-accent/5"}`}>
+                          <p className="text-xs font-semibold text-accent mb-1 flex items-center gap-1">
+                            <Sparkles className="h-3 w-3" /> AI Analysis
+                          </p>
+                          <p className="text-muted-foreground text-xs">{record.ai_analysis}</p>
+                        </div>
+                      )}
+
+                      {isAnalyzing === record.id && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-accent">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Analyzing with AI...
+                        </div>
+                      )}
+
+                      {documents[record.id] && documents[record.id].length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {documents[record.id].map((doc) => (
+                            <button
+                              key={doc.id}
+                              onClick={() => handleFileDownload(doc)}
+                              className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary hover:bg-primary/20 transition-colors font-medium"
+                            >
+                              <Paperclip className="h-3 w-3" />
+                              {doc.file_name}
+                              <Download className="h-3 w-3" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {scanType && !record.ai_analysis && (
+                        <Button variant="ghost" size="icon" onClick={() => analyzeRecord(record.id, record.title, record.category, scanType, record.description || "")} className="text-accent hover:text-accent rounded-xl" title="AI Analyze">
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => handleDownload(record)} className="text-muted-foreground hover:text-primary rounded-xl" title="Download Report">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive rounded-xl">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </div>

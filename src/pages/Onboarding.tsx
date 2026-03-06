@@ -177,24 +177,24 @@ const Onboarding = () => {
   const currentStep = steps[step];
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background">
-      <div className="absolute inset-0 bg-[linear-gradient(hsl(220_16%_18%/0.3)_1px,transparent_1px),linear-gradient(to_right,hsl(220_16%_18%/0.3)_1px,transparent_1px)] bg-[size:60px_60px]" />
+    <div className="relative flex min-h-screen items-center justify-center bg-background pattern-dots">
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative z-10 w-full max-w-lg px-4"
       >
-        <Card className="border-border glass">
+        <Card className="border-border/30 glass neon-border">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <currentStep.icon className="h-6 w-6 text-primary" />
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl gradient-primary animate-glow-pulse">
+              <currentStep.icon className="h-6 w-6 text-primary-foreground" />
             </div>
-            <CardTitle className="font-display tracking-wider text-primary">
+            <CardTitle className="font-display tracking-wider bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               {currentStep.title}
             </CardTitle>
             <CardDescription>
-              Step {step + 1} of {steps.length} — Set up your MediLocker profile
+              Step {step + 1} of {steps.length} — Set up your Arogya profile
             </CardDescription>
             {/* Progress bar */}
             <div className="mt-4 flex gap-2">
@@ -202,7 +202,7 @@ const Onboarding = () => {
                 <div
                   key={i}
                   className={`h-1 flex-1 rounded-full transition-colors ${
-                    i <= step ? "bg-primary glow-primary" : "bg-muted"
+                    i <= step ? "gradient-primary glow-primary" : "bg-muted"
                   }`}
                 />
               ))}
@@ -220,7 +220,7 @@ const Onboarding = () => {
                 <Button
                   onClick={() => setStep(step + 1)}
                   disabled={!currentStep.canNext}
-                  className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="flex-1 gap-2 btn-gradient"
                 >
                   Next
                   <ArrowRight className="h-4 w-4" />
@@ -229,7 +229,7 @@ const Onboarding = () => {
                 <Button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex-1 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary"
+                  className="flex-1 gap-2 btn-gradient"
                 >
                   {isSubmitting ? "Saving..." : "Complete Setup"}
                 </Button>
