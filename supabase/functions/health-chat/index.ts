@@ -16,7 +16,7 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    let systemPrompt = `You are MediLocker AI, a helpful health assistant. You provide general health information and suggestions.
+    let systemPrompt = `You are Arogya AI, a helpful health assistant. You provide general health information and suggestions.
 
 IMPORTANT: You are NOT a doctor. Always remind users that your suggestions are not a substitute for professional medical advice.
 

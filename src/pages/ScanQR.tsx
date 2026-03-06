@@ -11,14 +11,13 @@ const ScanQR = () => {
   const navigate = useNavigate();
 
   const handleGo = () => {
-    // Extract patient ID from URL
     const match = patientUrl.match(/\/patient\/([a-f0-9-]+)/i);
     if (match) {
       navigate(`/patient/${match[1]}`);
     } else if (patientUrl.match(/^[a-f0-9-]+$/i)) {
       navigate(`/patient/${patientUrl}`);
     } else {
-      toast.error("Invalid patient URL or ID. Please scan a valid MediLocker QR code.");
+      toast.error("Invalid patient URL or ID. Please scan a valid Arogya QR code.");
     }
   };
 
@@ -33,12 +32,12 @@ const ScanQR = () => {
         </p>
       </div>
 
-      <Card className="w-full max-w-md border-border glass">
+      <Card className="w-full max-w-md border-border/30 glass neon-border">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-            <ScanLine className="h-8 w-8 text-primary animate-pulse-glow" />
+          <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary animate-glow-pulse">
+            <ScanLine className="h-8 w-8 text-primary-foreground" />
           </div>
-          <CardTitle className="font-display tracking-wider text-primary">
+          <CardTitle className="font-display tracking-wider bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             Patient Lookup
           </CardTitle>
           <CardDescription>
@@ -46,10 +45,10 @@ const ScanQR = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-xl border border-dashed border-border bg-muted/20 p-12 text-center">
+          <div className="rounded-xl border border-dashed border-border/50 bg-muted/20 p-12 text-center">
             <ScanLine className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Point your camera at a MediLocker QR code
+              Point your camera at an Arogya QR code
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
               (Camera scanning coming soon — use manual entry below)
@@ -66,7 +65,7 @@ const ScanQR = () => {
             <Button
               onClick={handleGo}
               disabled={!patientUrl.trim()}
-              className="gap-1 bg-primary text-primary-foreground hover:bg-primary/90"
+              className="gap-1 btn-gradient"
             >
               Go
               <ArrowRight className="h-4 w-4" />
