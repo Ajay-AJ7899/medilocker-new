@@ -487,12 +487,12 @@ const Records = () => {
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         </div>
       ) : records.length === 0 ? (
-        <Card className="card-glow neon-border">
+        <Card className="glass-card rounded-2xl border-0">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 mb-4">
-              <FileText className="h-8 w-8 text-primary/40" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-3xl gradient-primary mb-4 animate-float">
+              <FileText className="h-8 w-8 text-white" />
             </div>
-            <p className="text-muted-foreground">No records found. Add your first medical record.</p>
+            <p className="text-muted-foreground">No records found. <span className="text-primary font-medium">Add your first medical record</span>.</p>
           </CardContent>
         </Card>
       ) : (
