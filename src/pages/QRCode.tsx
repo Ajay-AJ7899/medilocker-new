@@ -265,7 +265,7 @@ const QRCodePage = () => {
             </CardTitle>
             <CardDescription className="space-y-1">
               <span className="block font-mono text-xs text-primary">
-                Code: <span className="text-accent">{(profile as any)?.patient_code || "N/A"}</span>
+                Patient ID: <span className="text-accent font-bold tracking-widest">{profile?.patient_code || "N/A"}</span>
               </span>
               <span className="block text-muted-foreground">
                 {[
