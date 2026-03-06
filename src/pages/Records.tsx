@@ -345,8 +345,10 @@ const Records = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Medical Records</h1>
-          <p className="text-sm text-muted-foreground">Your complete medical history</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Medical <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Records</span>
+          </h1>
+          <p className="text-sm text-muted-foreground">Your complete <span className="text-primary font-medium">medical history</span> — secured & organized</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
