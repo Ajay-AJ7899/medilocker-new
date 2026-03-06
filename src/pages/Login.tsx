@@ -55,7 +55,7 @@ const Login = () => {
         return;
       }
 
-      const message = `Sign this message to authenticate with MediLocker.\n\nNonce: ${challengeData.nonce}`;
+      const message = `Sign this message to authenticate with Arogya.\n\nNonce: ${challengeData.nonce}`;
       const signature = (await window.ethereum.request({
         method: "personal_sign",
         params: [message, walletAddress],
@@ -105,20 +105,22 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background">
+    <div className="relative flex min-h-screen items-center justify-center bg-background pattern-dots">
+      <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary/15 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 bottom-0 h-80 w-80 rounded-full bg-accent/10 blur-3xl" />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-[460px] px-4"
       >
-        <Card className="shadow-lg border-border">
+        <Card className="shadow-lg border-border/30 neon-border bg-card">
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-              <Shield className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary animate-glow-pulse">
+              <Shield className="h-8 w-8 text-primary-foreground" />
             </div>
-            <CardTitle className="text-2xl font-bold text-primary">
-              MediLocker
+            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Arogya
             </CardTitle>
             <CardDescription className="text-muted-foreground">
               Connect your wallet to access health records
@@ -126,12 +128,12 @@ const Login = () => {
           </CardHeader>
           <CardContent className="space-y-5">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="patient" className="gap-2 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+              <TabsList className="grid w-full grid-cols-2 bg-muted">
+                <TabsTrigger value="patient" className="gap-2 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <User className="h-4 w-4" />
                   Patient
                 </TabsTrigger>
-                <TabsTrigger value="doctor" className="gap-2 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-primary">
+                <TabsTrigger value="doctor" className="gap-2 text-xs data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   <Stethoscope className="h-4 w-4" />
                   Doctor
                 </TabsTrigger>
@@ -151,7 +153,7 @@ const Login = () => {
             <Button
               onClick={connectWallet}
               disabled={isConnecting}
-              className="w-full gap-3"
+              className="w-full gap-3 btn-gradient"
               size="lg"
             >
               {isConnecting ? (
@@ -162,7 +164,7 @@ const Login = () => {
               {isConnecting ? "Connecting..." : "Connect MetaMask"}
             </Button>
 
-            <div className="rounded-lg border border-border bg-muted/50 p-4">
+            <div className="rounded-lg border border-border/30 bg-muted/50 p-4">
               <p className="text-xs text-muted-foreground">
                 <span className="font-semibold text-primary">🔒 Secure Authentication</span>
                 <br />
