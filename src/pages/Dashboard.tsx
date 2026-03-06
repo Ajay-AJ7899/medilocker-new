@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Heart, FileText, QrCode, MessageCircle, Activity, Pill, Calendar, Plus } from "lucide-react";
+import { Heart, FileText, QrCode, MessageCircle, Activity, Pill, Calendar, Plus, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -49,45 +49,49 @@ const Dashboard = () => {
       value: latestScore !== null ? latestScore : "—",
       valueClass: latestScore !== null ? getScoreColor(latestScore) : "text-muted-foreground",
       icon: Heart,
-      gradient: "gradient-primary",
+      gradient: "from-primary to-[hsl(280,80%,55%)]",
+      glow: "hsl(250 85% 65% / 0.15)",
     },
     {
       label: "Records",
       value: recordCount,
       valueClass: "text-foreground",
       icon: FileText,
-      gradient: "gradient-accent",
+      gradient: "from-accent to-[hsl(190,70%,40%)]",
+      glow: "hsl(172 80% 45% / 0.15)",
     },
     {
       label: "Allergies",
       value: profile?.allergies?.length ?? 0,
       valueClass: "text-foreground",
       icon: Pill,
-      gradient: "gradient-warm",
+      gradient: "from-[hsl(340,82%,52%)] to-[hsl(15,90%,55%)]",
+      glow: "hsl(340 82% 52% / 0.15)",
     },
     {
       label: "Blood Type",
       value: profile?.blood_type || "—",
       valueClass: "text-foreground",
       icon: Activity,
-      gradient: "gradient-sunny",
+      gradient: "from-[hsl(38,92%,50%)] to-[hsl(25,95%,53%)]",
+      glow: "hsl(38 92% 50% / 0.15)",
     },
   ];
 
   const quickActions = [
-    { label: "Add Record", icon: Plus, to: "/records?add=true", color: "from-primary to-primary" },
-    { label: "My QR Code", icon: QrCode, to: "/qr-code", color: "from-accent to-accent" },
-    { label: "Predictions", icon: Heart, to: "/my-predictions", color: "from-[hsl(340,82%,52%)] to-[hsl(340,82%,52%)]" },
-    { label: "AI Chat", icon: MessageCircle, to: "/chatbot", color: "from-[hsl(38,92%,50%)] to-[hsl(38,92%,50%)]" },
+    { label: "Add Record", icon: Plus, to: "/records?add=true", gradient: "from-primary to-[hsl(280,80%,55%)]" },
+    { label: "My QR Code", icon: QrCode, to: "/qr-code", gradient: "from-accent to-[hsl(190,70%,40%)]" },
+    { label: "Predictions", icon: TrendingUp, to: "/my-predictions", gradient: "from-[hsl(340,82%,52%)] to-[hsl(15,90%,55%)]" },
+    { label: "AI Chat", icon: MessageCircle, to: "/chatbot", gradient: "from-[hsl(38,92%,50%)] to-[hsl(25,95%,53%)]" },
   ];
 
   return (
     <div className="space-y-8">
       {/* Greeting */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Welcome back,{" "}
-          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-primary via-[hsl(280,80%,60%)] to-accent bg-clip-text text-transparent">
             {profile?.full_name?.split(" ")[0] || "User"}
           </span>
         </h1>
@@ -99,10 +103,22 @@ const Dashboard = () => {
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s, i) => (
-          <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.08 }}>
-            <Card className="card-glow card-hover overflow-hidden neon-border bg-card">
-              <CardContent className="flex items-center gap-4 p-5 relative">
-                <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ${s.gradient} shadow-sm`}>
+          <motion.div
+            key={s.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.08 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            className="group relative"
+          >
+            {/* Glow on hover */}
+            <div
+              className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+              style={{ background: s.glow }}
+            />
+            <Card className="relative glass-card overflow-hidden rounded-2xl border-0">
+              <CardContent className="flex items-center gap-4 p-5">
+                <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${s.gradient} shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                   <s.icon className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -119,17 +135,26 @@ const Dashboard = () => {
       <div>
         <h2 className="mb-4 text-lg font-semibold tracking-tight text-foreground">Quick Actions</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map(({ label, icon: Icon, to, color }, i) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.06 }}>
+          {quickActions.map(({ label, icon: Icon, to, gradient }, i) => (
+            <motion.div
+              key={label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.06 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+            >
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={() => navigate(to)}
-                className="h-auto w-full flex-col gap-3 border-border/30 bg-card py-7 card-hover card-glow group neon-border"
+                className="h-auto w-full flex-col gap-3 glass-card rounded-2xl border-0 py-8 group hover:bg-transparent"
               >
-                <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${color} shadow-sm transition-transform group-hover:scale-110`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-[0_0_25px_hsl(250_85%_65%/0.3)]`}>
                   <Icon className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-foreground">{label}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-foreground">{label}</span>
+                  <ArrowUpRight className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </Button>
             </motion.div>
           ))}

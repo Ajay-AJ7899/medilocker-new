@@ -99,6 +99,21 @@ export default {
           "0%, 100%": { transform: "translateY(0px)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        "float-slow": {
+          "0%, 100%": { transform: "translateY(0px) rotate(0deg)" },
+          "33%": { transform: "translateY(-12px) rotate(1deg)" },
+          "66%": { transform: "translateY(-4px) rotate(-1deg)" },
+        },
+        "morph": {
+          "0%, 100%": { borderRadius: "60% 40% 30% 70% / 60% 30% 70% 40%" },
+          "25%": { borderRadius: "30% 60% 70% 40% / 50% 60% 30% 60%" },
+          "50%": { borderRadius: "50% 60% 30% 60% / 30% 60% 70% 40%" },
+          "75%": { borderRadius: "60% 40% 60% 30% / 70% 30% 50% 60%" },
+        },
+        "spin-slow": {
+          from: { transform: "rotate(0deg)" },
+          to: { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -107,6 +122,9 @@ export default {
         "scan-line": "scan-line 3s linear infinite",
         "glow-pulse": "glow-pulse 3s ease-in-out infinite",
         "float": "float 4s ease-in-out infinite",
+        "float-slow": "float-slow 8s ease-in-out infinite",
+        "morph": "morph 8s ease-in-out infinite",
+        "spin-slow": "spin-slow 30s linear infinite",
       },
     },
   },
