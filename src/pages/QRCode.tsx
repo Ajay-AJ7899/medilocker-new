@@ -244,7 +244,7 @@ const QRCodePage = () => {
     <div className="flex flex-col items-center space-y-8">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Your <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">QR Code</span> & Summary
+          <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{profile?.full_name || "Your"}'s</span> QR Code & Summary
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Share your <span className="text-accent font-medium">secure QR code</span> or download a full PDF summary
@@ -265,7 +265,7 @@ const QRCodePage = () => {
             </CardTitle>
             <CardDescription className="space-y-1">
               <span className="block font-mono text-xs text-primary">
-                Code: <span className="text-accent">{(profile as any)?.patient_code || "N/A"}</span>
+                Patient ID: <span className="text-accent font-bold tracking-widest">{profile?.patient_code || "N/A"}</span>
               </span>
               <span className="block text-muted-foreground">
                 {[

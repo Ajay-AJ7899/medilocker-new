@@ -18,6 +18,7 @@ interface Profile {
   allergies: string[];
   avatar_url: string | null;
   onboarding_complete: boolean;
+  patient_code: string | null;
 }
 
 interface AuthContextType {
