@@ -352,9 +352,11 @@ const Patients = () => {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 bg-muted rounded-xl">
-                <TabsTrigger value="details" className="rounded-lg">Patient Details</TabsTrigger>
-                <TabsTrigger value="add-record" className="rounded-lg">Add Record</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-muted rounded-xl">
+                <TabsTrigger value="details" className="rounded-lg text-xs">Details</TabsTrigger>
+                <TabsTrigger value="records" className="rounded-lg text-xs">Records</TabsTrigger>
+                <TabsTrigger value="upload" className="rounded-lg text-xs">Upload Docs</TabsTrigger>
+                <TabsTrigger value="add-record" className="rounded-lg text-xs">Add Record</TabsTrigger>
               </TabsList>
 
               {/* Details Tab */}
