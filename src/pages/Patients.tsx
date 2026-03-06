@@ -279,6 +279,8 @@ const Patients = () => {
     setMarkUrgent(false);
     setNewRecord({ category: "", title: "", description: "", record_date: new Date().toISOString().split("T")[0], hospital_name: "" });
     setIsUploading(false);
+    // Refresh records view
+    if (patient) fetchPatientRecords(patient.user_id);
   };
 
   const calculateAge = (dob: string | null) => {
