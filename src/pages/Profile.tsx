@@ -79,14 +79,56 @@ const Profile = () => {
     }
   };
 
+  const patientCode = (profile as any)?.patient_code || null;
+
+  const copyPatientId = () => {
+    if (patientCode) {
+      navigator.clipboard.writeText(patientCode);
+      toast.success("Patient ID copied!");
+    }
+  };
+
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-wider text-foreground">Profile</h1>
-        <p className="text-sm text-muted-foreground">Manage your personal and emergency information</p>
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl gradient-primary shadow-lg">
+          <User className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{profile?.full_name || "Your"}</span> Profile
+          </h1>
+          <p className="text-sm text-muted-foreground">Manage your personal & emergency information</p>
+        </div>
       </div>
 
-      <Card className="border-border glass">
+      {/* Patient ID Card */}
+      {patientCode && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="glass-card rounded-2xl border-0 overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-accent via-primary to-accent animate-gradient-shift bg-[length:200%_200%]" />
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent shadow-lg">
+                <QrCode className="h-7 w-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Shield className="h-3 w-3" /> Your Arogya AI Patient ID
+                </p>
+                <p className="text-2xl font-bold font-mono tracking-[0.3em] bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  {patientCode}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyPatientId} className="gap-1.5 rounded-xl border-primary/30 hover:border-primary/60">
+                <Copy className="h-3.5 w-3.5" />
+                Copy
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      <Card className="glass-card rounded-2xl border-0">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display text-lg tracking-wider">
             <User className="h-5 w-5 text-primary" />

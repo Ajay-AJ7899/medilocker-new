@@ -105,11 +105,30 @@ const Dashboard = () => {
             </h1>
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              Your <span className="text-primary font-medium">health at a glance</span> — powered by AI
+              Your <span className="text-primary font-medium">health at a glance</span> — powered by Arogya AI
             </p>
           </div>
         </div>
       </motion.div>
+
+      {/* Patient ID Card */}
+      {patientCode && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <Card className="glass-card rounded-2xl border-0 overflow-hidden">
+            <div className="h-1 w-full bg-gradient-to-r from-accent via-primary to-accent animate-gradient-shift bg-[length:200%_200%]" />
+            <CardContent className="flex items-center gap-4 p-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-accent shadow-lg">
+                <QrCode className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground">Your Patient ID</p>
+                <p className="text-xl font-bold font-mono tracking-widest bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{patientCode}</p>
+              </div>
+              <p className="text-xs text-muted-foreground max-w-[140px] text-right">Share this ID with your doctor for record access</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
