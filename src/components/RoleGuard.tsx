@@ -9,11 +9,14 @@ interface RoleGuardProps {
 }
 
 const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
-  const { roles, isLoading } = useAuth();
+  const { roles, activeRole, isLoading } = useAuth();
 
   if (isLoading) return null;
 
-  const hasAccess = roles.some((role) => allowedRoles.includes(role));
+  // Check both database roles and the currently active role
+  const hasAccess =
+    roles.some((role) => allowedRoles.includes(role)) ||
+    (activeRole && allowedRoles.includes(activeRole));
 
   if (!hasAccess) {
     return <Navigate to="/dashboard" replace />;
