@@ -164,7 +164,7 @@ const Profile = () => {
         </CardContent>
       </Card>
 
-      <Card className="border-border glass">
+      <Card className="glass-card rounded-2xl border-0">
         <CardHeader>
           <CardTitle className="font-display text-lg tracking-wider">Emergency Contact</CardTitle>
         </CardHeader>
@@ -172,29 +172,29 @@ const Profile = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Contact Name</Label>
-              <Input value={form.emergency_contact_name} onChange={(e) => update("emergency_contact_name", e.target.value)} className="mt-1" />
+              <Input value={form.emergency_contact_name} onChange={(e) => update("emergency_contact_name", e.target.value)} className="mt-1 rounded-xl" />
             </div>
             <div>
               <Label>Contact Phone</Label>
-              <Input value={form.emergency_contact_phone} onChange={(e) => update("emergency_contact_phone", e.target.value)} className="mt-1" />
+              <Input value={form.emergency_contact_phone} onChange={(e) => update("emergency_contact_phone", e.target.value)} className="mt-1 rounded-xl" />
             </div>
           </div>
           <div>
             <Label>Relationship</Label>
-            <Input value={form.emergency_contact_relationship} onChange={(e) => update("emergency_contact_relationship", e.target.value)} className="mt-1" />
+            <Input value={form.emergency_contact_relationship} onChange={(e) => update("emergency_contact_relationship", e.target.value)} className="mt-1 rounded-xl" />
           </div>
         </CardContent>
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 glow-primary">
+        <Button onClick={handleSave} disabled={isSaving} className="gap-2 btn-gradient rounded-xl shadow-lg">
           <Save className="h-4 w-4" />
           {isSaving ? "Saving..." : "Save Changes"}
         </Button>
       </div>
 
       {/* Wallet info */}
-      <Card className="border-border glass">
+      <Card className="glass-card rounded-2xl border-0">
         <CardContent className="p-5">
           <p className="text-xs text-muted-foreground">
             <span className="font-semibold text-primary">Connected Wallet:</span>{" "}
